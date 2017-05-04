@@ -18,12 +18,11 @@ namespace feature_index {
     // short cut the type of unsigned char
     typedef unsigned char uchar;
     // define return feature, can be modified
-    struct feature                                                   // 一个feature特征
+    struct DPicture                                          //
     {
-        uchar binary_feature[TOTALBYTESIZE / ONEBYTESIZE]; // TOTALBYTESIZE = 1024 ，ONEBYTESIZE = 8
-        int frameType;                                               // frameType 保存frameType值
         int left, top, width, height;                               // 该feature 在原图中的坐标位置
-        std::string frameIdx;                                       // 表征原图的特征
+        cv::Mat img;
+        int label;
     };
     // define return file
     struct FileInfo
@@ -45,9 +44,9 @@ namespace feature_index {
     private:
         // define const var
         const int batch_size = 1;
-        const std::string BLOB_NAME = "fc_hash/relu";
         // define private var
         Detector *det;
+        std::string BLOB_NAME ;// "fc_hash/relu";
         caffe::Net<float> *feature_extraction_net;
         // define private func
         caffe::Net<float> *InitNet(std::string proto_file, std::string proto_weight);
@@ -66,11 +65,11 @@ namespace feature_index {
         int InitGpu(const char *CPU_MODE, int GPU_ID);
         // feature extract from memory
         uchar* MemoryFeatureExtraction( std::vector<cv::Mat> pic_list, std::vector<int> label );
-        // detect feature
-        int DetectPicture(int argc, char** argv);
+        // detect one Picture
+        DPicture* DetectPicture(const char* picName, int label);
         // feature extract from picture
         template<typename Dtype>
-        uchar* PictureFeatureExtraction(int count);
+        uchar* PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight);
 
     };
 }

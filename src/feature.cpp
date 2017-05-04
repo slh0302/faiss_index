@@ -180,7 +180,129 @@ namespace feature_index{
 
     }
 
-    int FeatureIndex::DetectPicture(int argc, char **argv) {
+    /**
+     *
+     * @param picName
+     * @return
+     *
+     */
+    DPicture* FeatureIndex::DetectPicture(const char* picName, int label) {
+        // always one input
+        cv::Mat im = cv::imread(picName);
+        std::vector<std::vector<int> > ans = det->Detect(im);
+        DPicture* pic = new DPicture[ans.siz()];
+        for (int i = 0; i < ans.size(); ++i) {
 
+            // judge whether detected area is out of the side
+            int width=0,height=0;
+            if(ans[i][0]+ans[i][2]>im.cols){
+                width = im.cols -ans[i][0];
+            }else width = ans[i][2];
+
+            if(ans[i][1]+ans[i][3]>im.rows){
+                height = im.rows -ans[i][1];
+            }else height = ans[i][3];
+
+            // store picture
+            cv::Rect rect(ans[i][0], ans[i][1], width, height);
+            pic[i].img = im(rect);
+            pic[i].left = ans[i][0];
+            pic[i].top = ans[i][1];
+            pic[i].width = width;
+            pic[i].height = height;
+
+            // temp label info
+            pic[i].label = label;
+        }
+
+        return pic;
+    }
+
+    /**
+     *
+     * @tparam Dtype
+     * @param count
+     * @param proto_file
+     * @param proto_weight
+     * @return
+     *
+     */
+    template<typename Dtype>
+    uchar* FeatureIndex::PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight) {
+
+        std::string pretrained_binary_proto(proto_file);
+        std::string feature_extraction_proto(proto_weight);
+
+        boost::shared_ptr<Net<Dtype> > _net(new Net<Dtype>(feature_extraction_proto, caffe::TEST));
+        _net->CopyTrainedLayersFrom(pretrained_binary_proto);
+
+        std::string extract_feature_blob_names(BLOB_NAME);
+
+        /////modify by su
+        std::cout<<_net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
+        int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
+        // init memory
+        unsigned char* feature_dbs = new uchar[count * TOTALBYTESIZE / ONEBYTESIZE];
+        std::vector<caffe::Blob<float>*> input_vec;
+        Datum datum;
+        const boost::shared_ptr<Blob<Dtype> > feature_blob =
+                _net->blob_by_name(extract_feature_blob_names);
+        int batch_size = feature_blob->num();
+        int dim_features = feature_blob->count() / batch_size;
+        for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
+            std::cout<<"start"<<std::endl;
+            _net->Forward(input_vec);
+            const Dtype* feature_blob_data;
+            for (int n = 0; n < batch_size; ++n) {
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                unsigned char char_temp = 0;
+                for (int d = 0; d < dim_features / 8; ++d) {
+                    unsigned char feature_temp = 0;
+                    for (int j = 0; j < 8; j++) {
+                        if (feature_blob_data[d*8 + j]>0.001) {
+                            char_temp = 1;
+                        }
+                        else {
+                            char_temp = 0;
+                        }
+                        feature_temp = feature_temp << 1;
+                        feature_temp = feature_temp | char_temp;
+                    }
+                    feature_dbs[d + (n + batch_index*batch_size)*dim_features/8] = feature_temp;
+                } // for (int d = 0; d < dim_features / 8; ++d)
+            }  // for (int n = 0; n < batch_size; ++n)
+        }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
+
+        // write the remain batch
+        bool isRemain=false;
+        int remain = count - num_mini_batches*(_net->blob_by_name(extract_feature_blob_names)->num());
+        if(remain >0 ){
+            isRemain=true;
+            _net->Forward(input_vec);
+        }
+        if(isRemain){
+            const Dtype* feature_blob_data;
+            for (int n = 0; n < remain; ++n) {//data new
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                unsigned char char_temp = 0;
+                for (int d = 0; d < dim_features/8; ++d) {
+                    unsigned char feature_temp = 0;
+                    for (int j = 0; j < 8; j++) {
+                        if (feature_blob_data[d*8 + j]>0.001) {
+                            char_temp = 1;
+                        }
+                        else {
+                            char_temp = 0;
+                        }
+                        feature_temp = feature_temp << 1;
+                        feature_temp = feature_temp | char_temp;
+                    } // for (int j = 0; j < 8; j++)
+                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features / 8 +d] = feature_temp;
+                } // for (int d = 0; d < dim_features/8; ++d)
+            }  // for (int n = 0; n < remian; ++n)
+        }  // for (int i = 0; i < num_features; ++i)
+
+        std::cout<<"Successfully"<<std::endl;
+        return feature_dbs;
     }
 }
