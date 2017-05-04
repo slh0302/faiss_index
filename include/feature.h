@@ -13,7 +13,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "ssd.h"
 namespace feature_index {
-
     #define TOTALBYTESIZE 1024
     #define ONEBYTESIZE 8
     // short cut the type of unsigned char
@@ -26,29 +25,52 @@ namespace feature_index {
         int left, top, width, height;                               // 该feature 在原图中的坐标位置
         std::string frameIdx;                                       // 表征原图的特征
     };
-
-    // feature class
+    // define return file
+    struct FileInfo
+    {
+        uchar* buff;
+        long long size;
+        FileInfo(uchar* buff ,long long size){
+            this->buff = buff;
+            this->size =size;
+        }
+    };
+    /**
+     *   @author Su
+     *   @class FeatureIndex
+     *   @usage 1. init network, extract or detect iamge feature
+     *          2. return the feature
+     */
     class FeatureIndex{
-        // define private var
     private:
+        // define const var
+        const int batch_size = 1;
+        const std::string BLOB_NAME = "fc_hash/relu";
+        // define private var
         Detector *det;
         caffe::Net<float> *feature_extraction_net;
-        caffe::Net<float> *InitNet(std::string PROTO_MODEL_PATH, std::string PROTO_FILE_PATH);
+        // define private func
+        caffe::Net<float> *InitNet(std::string proto_file, std::string proto_weight);
     public:
         // define public mem and function
         // init function
         inline FeatureIndex(){ feature_extraction_net = NULL; det = NULL; }
-        //only init feature
+        // only init feature
         FeatureIndex(std::string proto_file,std::string proto_mode);
-        //once init all
-        FeatureIndex(std::string feature_proto_file ,std::string feature_proto_model,
-                std::string det_proto_file, std::string det_proto_model);
-
-        uchar *img_read(const char *file_name);
+        // once init all
+        FeatureIndex(std::string feature_proto_file ,std::string feature_proto_weight,
+                std::string det_proto_file, std::string det_proto_weight);
+        // image file read
+        FileInfo ImgRead(const char *file_name);
+        // init gpu
         int InitGpu(const char *CPU_MODE, int GPU_ID);
-        // feature_extract
-        uchar *feature_extraction(uchar *picYuvData, int width, int height, int format, int frameType,
-                                 std::string frameIdx);
+        // feature extract from memory
+        uchar* MemoryFeatureExtraction( std::vector<cv::Mat> pic_list, std::vector<int> label );
+        // detect feature
+        int DetectPicture(int argc, char** argv);
+        // feature extract from picture
+        template<typename Dtype>
+        uchar* PictureFeatureExtraction(int count);
 
     };
 }
