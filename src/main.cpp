@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <feature.h>
 #include <faiss/IndexIVF.h>
 #include <faiss/IndexFlat.h>
 
@@ -27,7 +28,7 @@ int main() {
 
     int nlist = 100;
     int k = 4;
-
+    fopen
     faiss::IndexFlatL2 quantizer(d);       // the other index
     faiss::IndexIVFFlat index(&quantizer, d, nlist, faiss::METRIC_L2);
     // here we specify METRIC_L2, by default it performs inner-product search

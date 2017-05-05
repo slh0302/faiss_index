@@ -9,8 +9,9 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 include_directories(
         ${PROJECT_SOURCE_DIR}/include/
-        /home/dell/project/
+        /usr/local/include/
         /home/dell/caffe-ssd/include/
+        /home/dell/project/
         /usr/local/cuda-8.0/include/
 )
 link_directories(
@@ -33,5 +34,7 @@ target_link_libraries(
         faiss_index
         libfaiss.a
         libopenblas.so.0
+        libfeature.so
+        libssd.so
         /usr/lib/lapack/liblapack.so.3.0
 )

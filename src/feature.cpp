@@ -5,18 +5,9 @@
 #include <cstring>
 #include <string>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include "feature.h"
 #include "caffe/layers/memory_data_layer.hpp"
-#include "caffe/blob.hpp"
-#include "caffe/common.hpp"
-#include "caffe/net.hpp"
-#include "caffe/proto/caffe.pb.h"
 #include "caffe/util/db.hpp"
-#include "caffe/util/format.hpp"
-#include "caffe/util/io.hpp"
-#include "opencv2/imgproc/imgproc_c.h"
-#include "opencv2/imgproc/imgproc.hpp"
 
 namespace feature_index{
 
@@ -190,7 +181,7 @@ namespace feature_index{
         // always one input
         cv::Mat im = cv::imread(picName);
         std::vector<std::vector<int> > ans = det->Detect(im);
-        DPicture* pic = new DPicture[ans.siz()];
+        DPicture* pic = new DPicture[ans.size()];
         for (int i = 0; i < ans.size(); ++i) {
 
             // judge whether detected area is out of the side
