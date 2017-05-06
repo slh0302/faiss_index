@@ -219,7 +219,7 @@ namespace feature_index{
      *
      */
     template<typename Dtype>
-    uchar* FeatureIndex::PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight) {
+    float* FeatureIndex::PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight) {
 
         std::string pretrained_binary_proto(proto_file);
         std::string feature_extraction_proto(proto_weight);
@@ -233,7 +233,7 @@ namespace feature_index{
         std::cout<<_net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
         int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
         // init memory
-        unsigned char* feature_dbs = new uchar[count * TOTALBYTESIZE / ONEBYTESIZE];
+        float* feature_dbs = new float[count * TOTALBYTESIZE / ONEBYTESIZE];
         std::vector<caffe::Blob<float>*> input_vec;
         Datum datum;
         const boost::shared_ptr<Blob<Dtype> > feature_blob =
@@ -246,20 +246,8 @@ namespace feature_index{
             const Dtype* feature_blob_data;
             for (int n = 0; n < batch_size; ++n) {
                 feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
-                unsigned char char_temp = 0;
-                for (int d = 0; d < dim_features / 8; ++d) {
-                    unsigned char feature_temp = 0;
-                    for (int j = 0; j < 8; j++) {
-                        if (feature_blob_data[d*8 + j]>0.001) {
-                            char_temp = 1;
-                        }
-                        else {
-                            char_temp = 0;
-                        }
-                        feature_temp = feature_temp << 1;
-                        feature_temp = feature_temp | char_temp;
-                    }
-                    feature_dbs[d + (n + batch_index*batch_size)*dim_features/8] = feature_temp;
+                for (int d = 0; d < dim_features ; ++d) {
+                    feature_dbs[d + (n + batch_index*batch_size)*dim_features] = feature_blob_data[d];
                 } // for (int d = 0; d < dim_features / 8; ++d)
             }  // for (int n = 0; n < batch_size; ++n)
         }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
@@ -275,25 +263,41 @@ namespace feature_index{
             const Dtype* feature_blob_data;
             for (int n = 0; n < remain; ++n) {//data new
                 feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
-                unsigned char char_temp = 0;
-                for (int d = 0; d < dim_features/8; ++d) {
-                    unsigned char feature_temp = 0;
-                    for (int j = 0; j < 8; j++) {
-                        if (feature_blob_data[d*8 + j]>0.001) {
-                            char_temp = 1;
-                        }
-                        else {
-                            char_temp = 0;
-                        }
-                        feature_temp = feature_temp << 1;
-                        feature_temp = feature_temp | char_temp;
-                    } // for (int j = 0; j < 8; j++)
-                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features / 8 +d] = feature_temp;
+                for (int d = 0; d < dim_features; ++d) {
+                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features / 8 +d] = feature_blob_data[d];
                 } // for (int d = 0; d < dim_features/8; ++d)
             }  // for (int n = 0; n < remian; ++n)
         }  // for (int i = 0; i < num_features; ++i)
 
         std::cout<<"Successfully"<<std::endl;
         return feature_dbs;
+    }
+
+    /**
+     *
+     * @param data
+     * @return
+     *
+     */
+    uchar* FeatureIndex::floatToUnsignedChar(const float *data, int count) {
+        int k = 0;
+        int num_temp = TOTALBYTESIZE / ONEBYTESIZE;
+        unsigned char* temp = new unsigned char[count * num_temp];
+        while(k < count){
+            for(int i=0; i< num_temp; i++){
+                unsigned char temp_char = 0;
+                for( int j = 0; j< ONEBYTESIZE ;j++){
+                    temp_char = temp_char << 1;
+                    if(data[k * TOTALBYTESIZE + i * ONEBYTESIZE + j] > 0.001){
+                        temp_char = temp_char | 1;
+                    }else{
+                        temp_char = temp_char | 0;
+                    }
+                }
+                temp[k * num_temp + i] = temp_char;
+            }
+            k++;
+        }
+        return temp;
     }
 }

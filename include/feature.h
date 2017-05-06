@@ -69,8 +69,9 @@ namespace feature_index {
         DPicture* DetectPicture(const char* picName, int label);
         // feature extract from picture
         template<typename Dtype>
-        uchar* PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight);
-
+        float* PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight);
+        // float to binary
+        uchar* floatToUnsignedChar(const float* data, int count);
     };
 }
 #endif //FAISS_INDEX_FEATURE_H

@@ -2,3 +2,5 @@ bin/
 cmake-build-debug/
 .idea/
 lib/
+model/*
+test/
