@@ -8,6 +8,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <caffe/caffe.hpp>
+#include <string>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -43,7 +44,7 @@ namespace feature_index {
     class FeatureIndex{
     private:
         // define const var
-        const int batch_size = 1;
+        const static int batch_size = 1;
         // define private var
         Detector *det;
         std::string BLOB_NAME ;// "fc_hash/relu";
@@ -68,8 +69,7 @@ namespace feature_index {
         // detect one Picture
         DPicture* DetectPicture(const char* picName, int label);
         // feature extract from picture
-        template<typename Dtype>
-        float* PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight);
+        float* PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight, std::string blob_name);
         // float to binary
         uchar* floatToUnsignedChar(const float* data, int count);
     };

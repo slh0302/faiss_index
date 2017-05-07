@@ -211,20 +211,19 @@ namespace feature_index{
 
     /**
      *
-     * @tparam Dtype
      * @param count
      * @param proto_file
      * @param proto_weight
      * @return
      *
      */
-    template<typename Dtype>
-    float* FeatureIndex::PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight) {
+    float* FeatureIndex::PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight, std::string blob_name) {
 
-        std::string pretrained_binary_proto(proto_file);
-        std::string feature_extraction_proto(proto_weight);
+        std::string pretrained_binary_proto(proto_weight);
+        std::string feature_extraction_proto(proto_file);
 
-        boost::shared_ptr<Net<Dtype> > _net(new Net<Dtype>(feature_extraction_proto, caffe::TEST));
+        BLOB_NAME = blob_name;
+        Net<float>* _net(new Net<float>(feature_extraction_proto, caffe::TEST));
         _net->CopyTrainedLayersFrom(pretrained_binary_proto);
 
         std::string extract_feature_blob_names(BLOB_NAME);
@@ -236,14 +235,14 @@ namespace feature_index{
         float* feature_dbs = new float[count * TOTALBYTESIZE / ONEBYTESIZE];
         std::vector<caffe::Blob<float>*> input_vec;
         Datum datum;
-        const boost::shared_ptr<Blob<Dtype> > feature_blob =
+        const boost::shared_ptr<Blob<float> > feature_blob =
                 _net->blob_by_name(extract_feature_blob_names);
         int batch_size = feature_blob->num();
         int dim_features = feature_blob->count() / batch_size;
         for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
             std::cout<<"start"<<std::endl;
             _net->Forward(input_vec);
-            const Dtype* feature_blob_data;
+            const float* feature_blob_data;
             for (int n = 0; n < batch_size; ++n) {
                 feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
                 for (int d = 0; d < dim_features ; ++d) {
@@ -260,7 +259,7 @@ namespace feature_index{
             _net->Forward(input_vec);
         }
         if(isRemain){
-            const Dtype* feature_blob_data;
+            const float* feature_blob_data;
             for (int n = 0; n < remain; ++n) {//data new
                 feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
                 for (int d = 0; d < dim_features; ++d) {
