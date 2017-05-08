@@ -2,7 +2,14 @@
 #include <feature.h>
 #include <faiss/IndexIVF.h>
 #include <faiss/IndexFlat.h>
+#include <faiss/IndexIVFPQ.h>
 
+double elapsed ()
+{
+    struct timeval tv;
+    gettimeofday (&tv, NULL);
+    return  tv.tv_sec + tv.tv_usec * 1e-6;
+}
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     // input data
@@ -21,15 +28,13 @@ int main(int argc, char** argv) {
     fclose(f);
     std::cout<<"File read done"<<std::endl;
     //check data
-    for( int j =0 ;j< count ;j++)
+    for( int j =0 ;j< 5 ;j++)
     {
         for( int i = 0; i< 1024 ;i++){
-            if(data[j*1024 + i]< 0.01){
-                data[j*1024+i] = 0;
-            }else if(data[j*1024 + i] > 1000){
-                data[j*1024+i] = 1000;
-            }
+            std::cout<<data[j*1024+i]<<" ";
         }
+        std::cout<<std::endl;
+        std::cout<<std::endl;
     }
     //query
     feature_index::FeatureIndex input_index;
@@ -38,7 +43,7 @@ int main(int argc, char** argv) {
     std::string proto_weight = "/home/dell/CLionProjects/faiss_index/model/wd_google_all_hash_relu_iter_120000.caffemodel";
     float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "fc_hash/relu");
     std::cout<<"done extract"<<std::endl;
-    for( int j =0 ;j< 10 ;j++)
+    for( int j =0 ;j< 5 ;j++)
     {
         for( int i = 0; i< 1024 ;i++){
             std::cout<<xq[j*1024+i]<<" ";
@@ -50,13 +55,21 @@ int main(int argc, char** argv) {
 
     int d = 1024;                            // dimension
     // nq means num of query
-    int nq = 5;
+    int nq = 10;
     int nlist = 1000;
-    int k = 4;
+    int k = 10;
 
     faiss::IndexFlatL2 quantizer(d);       // the other index
     faiss::IndexIVFFlat index(&quantizer, d, nlist, faiss::METRIC_L2);
     // here we specify METRIC_L2, by default it performs inner-product search
+
+    // The vectors are still stored in Voronoi cells,
+    // but their size is reduced to a configurable number of bytes m
+    // (d must be a multiple of m).
+    int m = 16;
+    faiss::IndexIVFPQ index2(&quantizer, d, nlist, m, 8);
+
+
     assert(!index.is_trained);
     index.train(count, data);
     assert(index.is_trained);
@@ -66,20 +79,25 @@ int main(int argc, char** argv) {
         long *I = new long[k * nq];
         float *D = new float[k * nq];
 
-        index.search(nq, xq, k, D, I);
-
+        double t0 = elapsed();
+        index.search(nq, data, k, D, I);
+        double t1 = elapsed();
+        printf("time: %lf \n", t1-t0);
         printf("I=\n");
-        for(int i = nq - 5; i < nq; i++) {
+        for(int i = 0; i < nq; i++) {
             for(int j = 0; j < k; j++)
                 printf("%5ld ", I[i * k + j]);
             printf("\n");
         }
 
         index.nprobe = 10;
-        index.search(nq, xq, k, D, I);
 
+        double t2 = elapsed();
+        index.search(nq, xq, k, D, I);
+        double t3 = elapsed();
+        printf("time: %lf \n", t3-t2);
         printf("I=\n");
-        for(int i = nq - 5; i < nq; i++) {
+        for(int i = 0; i < nq; i++) {
             for(int j = 0; j < k; j++)
                 printf("%5ld ", I[i * k + j]);
             printf("\n");

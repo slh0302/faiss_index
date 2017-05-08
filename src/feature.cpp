@@ -232,7 +232,7 @@ namespace feature_index{
         std::cout<<_net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
         int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
         // init memory
-        float* feature_dbs = new float[count * TOTALBYTESIZE / ONEBYTESIZE];
+        float* feature_dbs = new float[count * TOTALBYTESIZE ];
         std::vector<caffe::Blob<float>*> input_vec;
         Datum datum;
         const boost::shared_ptr<Blob<float> > feature_blob =
@@ -263,7 +263,7 @@ namespace feature_index{
             for (int n = 0; n < remain; ++n) {//data new
                 feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
                 for (int d = 0; d < dim_features; ++d) {
-                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features / 8 +d] = feature_blob_data[d];
+                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features +d] = feature_blob_data[d];
                 } // for (int d = 0; d < dim_features/8; ++d)
             }  // for (int n = 0; n < remian; ++n)
         }  // for (int i = 0; i < num_features; ++i)
