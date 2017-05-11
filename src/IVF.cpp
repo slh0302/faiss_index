@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <feature.h>
 #include <faiss/IndexIVF.h>
 #include <faiss/IndexFlat.h>
@@ -23,83 +24,68 @@ int main(int argc, char** argv) {
         std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
         return 0;
     }
-    fread(data,sizeof(float), count, f);
+    fread(data,sizeof(float), count*1024, f);
     fclose(f);
+//    std::ofstream out("text.txt",std::ios::out);
+//    for( int i = 0;i<2000;i++){
+//        for(int j = 0; j<1024;j++){
+//            out<<data[i*1024+j]<<" ";
+//        }
+//        out<<std::endl;
+//        out<<std::endl;
+//    }
+//    out.close();
     std::cout<<"File read done"<<std::endl;
-    //check data
-    for( int j =0 ;j< 5 ;j++)
-    {
-        for( int i = 0; i< 1024 ;i++){
-            std::cout<<data[j*1024+i]<<" ";
-        }
-        std::cout<<std::endl;
-        std::cout<<std::endl;
-    }
     //query
     feature_index::FeatureIndex input_index;
-    input_index.InitGpu("GPU", 1);
+    input_index.InitGpu("CPU", 1);
     std::string proto_file = "/home/slh/faiss_index/model/deploy_googlenet_hash.prototxt";
     std::string proto_weight = "/home/slh/faiss_index/model/wd_google_all_hash_relu_iter_120000.caffemodel";
     float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "fc_hash/relu");
     std::cout<<"done extract"<<std::endl;
-    for( int j =0 ;j< 5 ;j++)
-    {
-        for( int i = 0; i< 1024 ;i++){
-            std::cout<<xq[j*1024+i]<<" ";
-        }
-        std::cout<<std::endl;
-        std::cout<<std::endl;
-    }
 
 
     int d = 1024;                            // dimension
     // nq means num of query
     int nq = 10;
-    int nlist = int(4 * sqrt(count));
+    int nlist = 1000;
     int k = 10;
 
     faiss::IndexFlatL2 quantizer(d);       // the other index
-    faiss::IndexIVFFlat index(&quantizer, d, nlist, faiss::METRIC_L2);
+    //faiss::IndexIVFFlat index(&quantizer, d, nlist, faiss::METRIC_L2);
     // here we specify METRIC_L2, by default it performs inner-product search
 
-    double ttrain = elapsed();
-    assert(!index.is_trained);
-    index.train(count, data);
-    double ttdone = elapsed();
-    printf("time: %lf \n", ttrain-ttdone);
-    assert(index.is_trained);
-    index.add(count, data);
+   // double ttrain = elapsed();
+//    assert(!index.is_trained);
+    //index.verbose =true;
+   // index.train(count, data);
+   // double ttdone = elapsed();
+    //printf("time: %lf \n", ttrain-ttdone);
+   // assert(index.is_trained);
+    quantizer.verbose =true;
+    quantizer.add(count, data);
 
     {       // search xq
-        long *I = new long[k * nq];
-        float *D = new float[k * nq];
+        std::vector<faiss::Index::idx_t> nns (k * nq);
+        std::vector<float>               dis (k * nq);
 
-        double t0 = elapsed();
-        index.search(nq, data, k, D, I);
-        double t1 = elapsed();
-        printf("time: %lf \n", t1-t0);
-        printf("I=\n");
-        for(int i = 0; i < nq; i++) {
-            for(int j = 0; j < k; j++)
-                printf("%5ld ", I[i * k + j]);
-            printf("\n");
-        }
-
-        index.nprobe = 10;
-
+        //index.nprobe = 10;
         double t2 = elapsed();
-        index.search(nq, xq, k, D, I);
+        quantizer.search(nq, xq, k, dis.data(), nns.data());
         double t3 = elapsed();
         printf("time: %lf \n", t3-t2);
         printf("I=\n");
         for(int i = 0; i < nq; i++) {
             for(int j = 0; j < k; j++)
-                printf("%5ld ", I[i * k + j]);
+                printf("%5ld ", nns[i * k + j]);
             printf("\n");
         }
 
-        delete [] I;
-        delete [] D;
+        for(int i = 0; i < nq; i++) {
+            for(int j = 0; j < k; j++)
+                printf("%7g ", dis[i * k + j]);
+            printf("\n");
+        }
     }
 
 
