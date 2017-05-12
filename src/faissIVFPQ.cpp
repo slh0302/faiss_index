@@ -6,6 +6,7 @@
 #include <feature.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexIVFPQ.h>
+#include <faiss/index_io.h>
 
 double elapsed ()
 {
@@ -29,7 +30,7 @@ int main(int argc, char** argv) {
         std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
         return 0;
     }
-    fread(data,sizeof(float), count, f);
+    fread(data,sizeof(float), count*1024, f);
     fclose(f);
     std::cout<<"File read done"<<std::endl;
     //check data
@@ -48,14 +49,8 @@ int main(int argc, char** argv) {
     std::string proto_weight = "/home/slh/faiss_index/model/wd_google_all_hash_relu_iter_120000.caffemodel";
     float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "fc_hash/relu");
     std::cout<<"done extract"<<std::endl;
-    for( int j =0 ;j< 5 ;j++)
-    {
-        for( int i = 0; i< 1024 ;i++){
-            std::cout<<xq[j*1024+i]<<" ";
-        }
-        std::cout<<std::endl;
-        std::cout<<std::endl;
-    }
+
+
     // There are two parameters to the search method:
     // nlist, the number of cells, and
     // nprobe, the number of cells (out of nlist)
@@ -83,12 +78,23 @@ int main(int argc, char** argv) {
     // size_t nbits; equal to 8        ///< number of bits per quantization index
     faiss::IndexIVFPQ index(&quantizer, d, nlist, m, 8);
     // # 8 specifies that each sub-vector is encoded as 8 bits
-    long double ttrain = elapsed();
+    double ttrain = elapsed();
     assert(!index.is_trained);
+    index.verbose = true;
     index.train(count, data);
-    long double ttdone = elapsed();
-    printf("time: %Lf \n", ttrain-ttdone);
+    printf("time: %.3f \n", elapsed()-ttrain);
     assert(index.is_trained);
+
+
+//    { // I/O demo
+//        const char *outfilename = "/home/slh/faiss_index/index_store/index_IVFPQ_NOTADD.faissindex";
+//        printf ("[%.3f s] storing the pre-trained index to %s\n",
+//                elapsed() - ttrain, outfilename);
+//
+//        write_index (&index, outfilename);
+//    }
+
+
     index.add(count, data);
 
     {       // search xq
@@ -105,8 +111,14 @@ int main(int argc, char** argv) {
                 printf("%5ld ", I[i * k + j]);
             printf("\n");
         }
+        printf("D=\n");
+        for(int i = 0; i < nq; i++) {
+            for(int j = 0; j < k; j++)
+                printf("%7g ", D[i * k + j]);
+            printf("\n");
+        }
 
-        index.nprobe = 10;
+        index.nprobe = 128;
 
         double t2 = elapsed();
         index.search(nq, xq, k, D, I);
@@ -118,6 +130,13 @@ int main(int argc, char** argv) {
                 printf("%5ld ", I[i * k + j]);
             printf("\n");
         }
+        printf("D=\n");
+        for(int i = 0; i < nq; i++) {
+            for(int j = 0; j < k; j++)
+                printf("%7g ", D[i * k + j]);
+            printf("\n");
+        }
+
 
         delete [] I;
         delete [] D;

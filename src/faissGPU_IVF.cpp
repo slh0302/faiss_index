@@ -1,6 +1,12 @@
+//
+// Created by slh on 17-5-11.
+//
+
 #include <feature.h>
 #include <faiss/gpu/StandardGpuResources.h>
-#include <faiss/gpu/GpuIndexIVFPQ.h>
+#include <faiss/gpu/GpuIndexIVF.h>
+#include <faiss/gpu/GpuIndexFlat.h>
+#include <faiss/gpu/GpuIndexIVFFlat.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/index_io.h>
 double elapsed ()
@@ -40,19 +46,27 @@ int main(int argc, char** argv){
     int d = 1024;
     int ncentroids = int(4 * sqrt(count));
     faiss::gpu::StandardGpuResources resources;
+    //    GpuIndexIVFFlat(GpuResources* resources,
+    //                    int device,
+    //            // Does the coarse quantizer use float16?
+    //            bool useFloat16CoarseQuantizer,
+    //            // Is our IVF storage of vectors in float16?
+    //            bool useFloat16IVFStorage,
+    //            int dims,
+    //            int nlist,
+    //            IndicesOptions indicesOptions,
+    //            faiss::MetricType metric);
+    //    faiss::gpu::GpuIndexFlat quantizer(&resources,d, faiss::METRIC_L2);
+    faiss::gpu::GpuIndexIVFFlat index (&resources, 2,false,false,d,ncentroids,
+                                       faiss::gpu::INDICES_64_BIT, faiss::METRIC_L2);
 
-    faiss::gpu::GpuIndexIVFPQ index (
-            &resources, 2, d,
-            ncentroids, 32, 8, true,
-            faiss::gpu::INDICES_64_BIT,
-            false,
-            faiss::METRIC_L2);
     index.verbose = true;
+    //resources.setTempMemory(512 * 1024 * 1024)
     index.train(count, data);
     index.add (count, data);
 
     { // I/O demo
-        const char *outfilename = "/home/slh/faiss_index/index_store/index_GPU_IVFPQ.faissindex";
+        const char *outfilename = "/home/slh/faiss_index/index_store/index_GPU_IVF.faissindex";
         faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
         write_index (cpu_index, outfilename);
         printf ("done save \n");
@@ -71,14 +85,21 @@ int main(int argc, char** argv){
         index.search (nq, xq, k, D, I);
         double t1 = elapsed();
         printf("%7lf \n",t1 - t0 );
+        printf("I=\n");
         for(int i = 0; i < nq; i++) {
             for(int j = 0; j < k; j++)
                 printf("%7ld ", I[i * k + j]);
             printf("\n");
         }
-
+        printf("D=\n");
+        for (int i = 0; i < nq; i++) {
+            for (int j = 0; j < k; j++) {
+                printf ("%7g ", D[j + i * k]);
+            }
+            printf ("\n");
+        }
 
     }
-	return 0;
+    return 0;
 
 }

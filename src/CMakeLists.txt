@@ -58,6 +58,18 @@ add_executable(test_ivfpq ${SOURCE_TESTIVFPQ_FILES})
 set(SOURCE_FEATURE test.cpp)
 add_executable(extract_feature ${SOURCE_FEATURE})
 
+set(SOURCE_IO_IVFPQ ioIVFPQ.cpp)
+add_executable(faissIO_IVFPQ ${SOURCE_IO_IVFPQ})
+
+set(SOURCE_GPU_IO_IVFPQ GpuIOIVFPQ.cpp)
+add_executable(faissGPU_IVFPQ_IO ${SOURCE_GPU_IO_IVFPQ})
+
+set(SOURCE_GPU_IVF faissGPU_IVF.cpp)
+add_executable(faissGPU_IVF ${SOURCE_GPU_IVF})
+
+set(SOURCE_GPU_IO_IVF faissGpuIO_IVF.cpp)
+add_executable(faissGPU_IO_IVF ${SOURCE_GPU_IO_IVF})
+
 target_link_libraries(
         faissIVF
         libfaiss.a
@@ -130,6 +142,65 @@ target_link_libraries(
         libcublas.so
 )
 
+target_link_libraries(
+        faissGPU_IVFPQ_IO
+        gpufaiss
+        faiss
+        libfeature.so
+        libssd.so
+        libboost_system.so
+        libboost_filesystem.so
+        libopencv_core.so
+        libopencv_imgcodecs.so
+        libopencv_imgproc.so
+        libmkl_intel_ilp64.so
+        libmkl_core.so
+        libmkl_gnu_thread.so
+        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
+        libglog.so
+        libcudart.so
+        libcublas.so
+)
+
+target_link_libraries(
+        faissGPU_IVF
+        gpufaiss
+        faiss
+        libfeature.so
+        libssd.so
+        libboost_system.so
+        libboost_filesystem.so
+        libopencv_core.so
+        libopencv_imgcodecs.so
+        libopencv_imgproc.so
+        libmkl_intel_ilp64.so
+        libmkl_core.so
+        libmkl_gnu_thread.so
+        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
+        libglog.so
+        libcudart.so
+        libcublas.so
+)
+
+target_link_libraries(
+        faissGPU_IO_IVF
+        gpufaiss
+        faiss
+        libfeature.so
+        libssd.so
+        libboost_system.so
+        libboost_filesystem.so
+        libopencv_core.so
+        libopencv_imgcodecs.so
+        libopencv_imgproc.so
+        libmkl_intel_ilp64.so
+        libmkl_core.so
+        libmkl_gnu_thread.so
+        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
+        libglog.so
+        libcudart.so
+        libcublas.so
+)
 
 target_link_libraries(
         tests_imi
@@ -167,6 +238,23 @@ target_link_libraries(
 
 target_link_libraries(
         extract_feature
+        libfaiss.a
+        libfeature.so
+        libssd.so
+        libboost_system.so
+        libboost_filesystem.so
+        libopencv_core.so
+        libopencv_imgcodecs.so
+        libopencv_imgproc.so
+        libmkl_intel_ilp64.so
+        libmkl_core.so
+        libmkl_gnu_thread.so
+        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
+        libglog.so
+)
+
+target_link_libraries(
+        faissIO_IVFPQ
         libfaiss.a
         libfeature.so
         libssd.so

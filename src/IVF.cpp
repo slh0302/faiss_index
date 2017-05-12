@@ -26,15 +26,6 @@ int main(int argc, char** argv) {
     }
     fread(data,sizeof(float), count*1024, f);
     fclose(f);
-//    std::ofstream out("text.txt",std::ios::out);
-//    for( int i = 0;i<2000;i++){
-//        for(int j = 0; j<1024;j++){
-//            out<<data[i*1024+j]<<" ";
-//        }
-//        out<<std::endl;
-//        out<<std::endl;
-//    }
-//    out.close();
     std::cout<<"File read done"<<std::endl;
     //query
     feature_index::FeatureIndex input_index;
@@ -48,20 +39,20 @@ int main(int argc, char** argv) {
     int d = 1024;                            // dimension
     // nq means num of query
     int nq = 10;
-    int nlist = 1000;
+    int nlist = int(4 * sqrt(count));
     int k = 10;
 
     faiss::IndexFlatL2 quantizer(d);       // the other index
-    //faiss::IndexIVFFlat index(&quantizer, d, nlist, faiss::METRIC_L2);
+    faiss::IndexIVFFlat index(&quantizer, d, nlist, faiss::METRIC_L2);
     // here we specify METRIC_L2, by default it performs inner-product search
 
-   // double ttrain = elapsed();
-//    assert(!index.is_trained);
-    //index.verbose =true;
-   // index.train(count, data);
-   // double ttdone = elapsed();
-    //printf("time: %lf \n", ttrain-ttdone);
-   // assert(index.is_trained);
+    double ttrain = elapsed();
+    assert(!index.is_trained);
+    index.verbose =true;
+    index.train(count, data);
+    double ttdone = elapsed();
+    printf("time: %lf \n", ttdone-ttrain);
+    assert(index.is_trained);
     quantizer.verbose =true;
     quantizer.add(count, data);
 
