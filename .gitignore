@@ -3,5 +3,4 @@ cmake-build-debug/
 .idea/
 lib/
 model/*
-test/
 index_store/

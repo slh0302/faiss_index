@@ -53,16 +53,15 @@ int main(int argc, char** argv) {
     double ttdone = elapsed();
     printf("time: %lf \n", ttdone-ttrain);
     assert(index.is_trained);
-    quantizer.verbose =true;
-    quantizer.add(count, data);
+    index.add(count, data);
 
     {       // search xq
         std::vector<faiss::Index::idx_t> nns (k * nq);
         std::vector<float>               dis (k * nq);
 
-        //index.nprobe = 10;
+        index.nprobe = 128;
         double t2 = elapsed();
-        quantizer.search(nq, xq, k, dis.data(), nns.data());
+        index.search(nq, xq, k, dis.data(), nns.data());
         double t3 = elapsed();
         printf("time: %lf \n", t3-t2);
         printf("I=\n");
@@ -74,7 +73,7 @@ int main(int argc, char** argv) {
 
         for(int i = 0; i < nq; i++) {
             for(int j = 0; j < k; j++)
-                printf("%7g ", dis[i * k + j]);
+                printf("%7.3g ", dis[i * k + j]);
             printf("\n");
         }
     }
