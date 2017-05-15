@@ -55,7 +55,7 @@ int main(int argc, char** argv){
     }
     out.close();
     feature_index::FeatureIndex fea_index;
-    float * xq = fea_index.PictureFeatureExtraction(argc - 2 ,proto_file.c_str(), proto_weight.c_str(), "fc_hash/relu");
+    float * xq = fea_index.PictureFeatureExtraction(argc - 2 ,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
 
     // para k-NN
     int k = 10;

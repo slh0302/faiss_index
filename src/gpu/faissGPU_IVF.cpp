@@ -65,13 +65,13 @@ int main(int argc, char** argv){
     index.train(count, data);
     index.add (count, data);
 
-    { // I/O demo
-        const char *outfilename = "/home/slh/faiss_index/index_store/index_GPU_IVF.faissindex";
-        faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
-        write_index (cpu_index, outfilename);
-        printf ("done save \n");
-        delete cpu_index;
-    }
+//    { // I/O demo
+//        const char *outfilename = "/home/slh/faiss_index/index_store/index_GPU_IVF.faissindex";
+//        faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
+//        write_index (cpu_index, outfilename);
+//        printf ("done save \n");
+//        delete cpu_index;
+//    }
 
 
     {
@@ -80,7 +80,7 @@ int main(int argc, char** argv){
         long *I = new long[k * nq];
         float *D = new float[k * nq];
         // different from IndexIVF
-        index.setNumProbes(1024);
+        index.setNumProbes(128);
         double t0 = elapsed();
         index.search (nq, xq, k, D, I);
         double t1 = elapsed();

@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 
         for(int i = 0; i < nq; i++) {
             for(int j = 0; j < k; j++)
-                printf("%7.3g ", dis[i * k + j]);
+                printf("%7g ", dis[i * k + j]);
             printf("\n");
         }
     }

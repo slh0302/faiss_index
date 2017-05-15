@@ -100,25 +100,7 @@ int main(int argc, char** argv) {
     {       // search xq
         long *I = new long[k * nq];
         float *D = new float[k * nq];
-
-        double t0 = elapsed();
-        index.search(nq, data, k, D, I);
-        double t1 = elapsed();
-        printf("time: %lf \n", t1-t0);
-        printf("I=\n");
-        for(int i = 0; i < nq; i++) {
-            for(int j = 0; j < k; j++)
-                printf("%5ld ", I[i * k + j]);
-            printf("\n");
-        }
-        printf("D=\n");
-        for(int i = 0; i < nq; i++) {
-            for(int j = 0; j < k; j++)
-                printf("%7g ", D[i * k + j]);
-            printf("\n");
-        }
-
-        index.nprobe = 128;
+        index.nprobe = 1024;
 
         double t2 = elapsed();
         index.search(nq, xq, k, D, I);
