@@ -18,6 +18,7 @@ double elapsed ()
 int main(int argc, char** argv) {
     // init and check data
     google::InitGoogleLogging(argv[0]);
+    int queryNum = 2000;
     // input data
     if (argc <= 2){
         std::cout<<"argc : "<<argc<<" is not enough"<<std::endl;
@@ -33,32 +34,41 @@ int main(int argc, char** argv) {
     fread(data,sizeof(float), count*1024, f);
     fclose(f);
     std::cout<<"File read done"<<std::endl;
-    //check data
-    for( int j =0 ;j< 5 ;j++)
-    {
-        for( int i = 0; i< 1024 ;i++){
-            std::cout<<data[j*1024+i]<<" ";
-        }
-        std::cout<<std::endl;
-        std::cout<<std::endl;
-    }
+
+    // file read info
+    std::string file_info = std::string(argv[1])+"_info";
+    FILE* f2 = fopen(file_info.c_str(),"rb");
+    feature_index::Info_String* info = new feature_index::Info_String[count];
+    fread(info, sizeof(feature_index::Info_String), count, f2);
+    fclose(f2);
+    std::cout<<"File info read done"<<std::endl;
+
     // query input
     feature_index::FeatureIndex input_index;
     input_index.InitGpu("GPU", 1);
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_googlenet_hash.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_all_hash_relu_iter_120000.caffemodel";
-    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "fc_hash/relu");
+    std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
+    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
+    float * xq = input_index.PictureFeatureExtraction(queryNum, proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
     std::cout<<"done extract"<<std::endl;
 
+    // query info input
+    int* query = new int[queryNum];
+    std::ifstream inquery("/home/slh/faiss_index/model/queryinfo",std::ios::in);
+    for(int i=0; i<queryNum ;i++){
+        inquery>>query[i];
+    }
+    inquery.close();
 
+    // Init label list
+    input_index.InitLabelList("/home/slh/faiss_index/model/labellist.txt");
     // There are two parameters to the search method:
     // nlist, the number of cells, and
     // nprobe, the number of cells (out of nlist)
     // that are visited to perform a search
     int d = 1024;                      // dimension
-    int nq = 10;                       // nq means num of query
+    int nq = queryNum;                       // nq means num of query
     int nlist = int(4 * sqrt(count));
-    int k = 10;                        // k-NN
+    int k = 100;                        // max k-NN
 
     faiss::IndexFlatL2 quantizer(d);   // the other index
 
@@ -95,16 +105,64 @@ int main(int argc, char** argv) {
 //    }
 
 
+    //for(int i=0;i<9;i++){
     index.add(count, data);
+    //}
 
     {       // search xq
         long *I = new long[k * nq];
         float *D = new float[k * nq];
-        index.nprobe = 1024;
-
+        index.nprobe = 15;
+        //nq = 10;
         double t2 = elapsed();
         index.search(nq, xq, k, D, I);
         double t3 = elapsed();
+
+//
+//        // test for nprobe and k for mAP
+//        // for nprobe, and k = 10
+//        k = 10;
+//        for (int tnprobe = 1; tnprobe < 128; tnprobe+=10){
+//            index.nprobe = tnprobe;
+//            double t2 = elapsed();
+//            index.search(nq, xq, k, D, I);
+//            double t3 = elapsed();
+//
+//            // Evaluate
+//            double total_res = 0;
+//            for(int i = 0; i< nq; i++){
+//                double res = input_index.Evaluate(k, query[i], info, &I[i * k]);
+//                total_res += res;
+//            }
+//            printf("mAP (nprobe: %d):  %7lf \n", tnprobe, total_res/nq);
+//            printf("time: %lf \n", t3-t2);
+//        }
+//        // k-nn, and nprobe = 10
+//        index.nprobe = 10;
+//        for (int tk = 1; tk < 50; tk+=2){
+//            double t2 = elapsed();
+//            index.search(nq, xq, tk, D, I);
+//            double t3 = elapsed();
+//
+//            // Evaluate
+//            double total_res = 0;
+//            for(int i = 0; i< nq; i++){
+//                double res = input_index.Evaluate(tk, query[i], info, &I[i * tk]);
+//                total_res += res;
+//            }
+//            printf("mAP (k-nn: %d):  %7lf \n", tk, total_res/nq);
+//            printf("time: %lf \n", t3-t2);
+//        }
+
+
+        //evaluate
+//        double total_res = 0;
+//        for(int i = 0; i< nq; i++){
+//            double res = input_index.Evaluate(k, query[i], info, &I[i * k]);
+//            total_res += res;
+//        }
+//        printf("mAP:  %7lf\n", total_res/nq);
+//
         printf("time: %lf \n", t3-t2);
         printf("I=\n");
         for(int i = 0; i < nq; i++) {

@@ -6,6 +6,7 @@
 #define FAISS_INDEX_FEATURE_H
 #include <iostream>
 #include <vector>
+#include <map>
 #include <boost/shared_ptr.hpp>
 #include <caffe/caffe.hpp>
 #include <string>
@@ -19,12 +20,19 @@ namespace feature_index {
     // short cut the type of unsigned char
     typedef unsigned char uchar;
     // define return feature, can be modified
-    struct DPicture                                          //
+    struct DPicture
     {
-        int left, top, width, height;                               // 该feature 在原图中的坐标位置
+        int left, top, width, height;     // 该feature 在原图中的坐标位置
         cv::Mat img;
         int label;
     };
+
+    // define info string
+    struct Info_String
+    {
+        char info[100];
+    };
+
     // define return file
     struct FileInfo
     {
@@ -49,6 +57,7 @@ namespace feature_index {
         Detector *det;
         std::string BLOB_NAME ;// "fc_hash/relu";
         caffe::Net<float> *feature_extraction_net;
+        std::map<int, int> LabelList;// Evaluate
         // define private func
         caffe::Net<float> *InitNet(std::string proto_file, std::string proto_weight);
     public:
@@ -72,6 +81,10 @@ namespace feature_index {
         float* PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight, std::string blob_name);
         // float to binary
         uchar* floatToUnsignedChar(const float* data, int count);
+        // evaluate
+        double Evaluate(int end, int label, Info_String* info, long* index);
+        // init label list
+        void InitLabelList(std::string filename);
     };
 }
 #endif //FAISS_INDEX_FEATURE_H

@@ -6,6 +6,8 @@
 #include <string>
 #include <sys/stat.h>
 #include "feature.h"
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
 #include "caffe/layers/memory_data_layer.hpp"
 #include "caffe/util/db.hpp"
 
@@ -240,7 +242,7 @@ namespace feature_index{
         int batch_size = feature_blob->num();
         int dim_features = feature_blob->count() / batch_size;
         for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
-            std::cout<<"start"<<std::endl;
+            //std::cout<<"start"<<std::endl;
             _net->Forward(input_vec);
             const float* feature_blob_data;
             for (int n = 0; n < batch_size; ++n) {
@@ -298,5 +300,47 @@ namespace feature_index{
             k++;
         }
         return temp;
+    }
+
+    /**
+     *
+     * @param filename
+     *
+     *
+     */
+    void FeatureIndex::InitLabelList(std::string filename) {
+        std::ifstream in_label;
+        in_label.open(filename, std::ios::in);
+        for (int i = 0; i < 141756; i++){
+            int name, data;
+            in_label >> name >> data;
+            LabelList.insert(std::pair<int, int>(name, data));
+        }
+        in_label.close();
+    }
+
+    /**
+     *
+     * @param end
+     * @param label
+     * @param info
+     * @param index
+     * @return
+     *
+     */
+    double FeatureIndex::Evaluate(int end, int label, Info_String *info, long *index) {
+        int num = 0;
+        double res=0;
+        std::vector< std::string > file_name_list;
+        for (int i = 0; i < end; i++){
+            boost::split(file_name_list, info[index[i]].info, boost::is_any_of(" ,!"), boost::token_compress_on);
+            if (atoi(file_name_list[1].c_str()) == label){
+                num++;
+                res += num*1.0 / (i + 1);
+            }
+            file_name_list.clear();
+        }
+        res = res / LabelList[label];
+        return res;
     }
 }
