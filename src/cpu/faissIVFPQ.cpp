@@ -18,7 +18,7 @@ double elapsed ()
 int main(int argc, char** argv) {
     // init and check data
     google::InitGoogleLogging(argv[0]);
-    int queryNum = 2000;
+    int queryNum = 10;
     // input data
     if (argc <= 2){
         std::cout<<"argc : "<<argc<<" is not enough"<<std::endl;
@@ -155,14 +155,14 @@ int main(int argc, char** argv) {
 //        }
 
 
-        //evaluate
-//        double total_res = 0;
-//        for(int i = 0; i< nq; i++){
-//            double res = input_index.Evaluate(k, query[i], info, &I[i * k]);
-//            total_res += res;
-//        }
-//        printf("mAP:  %7lf\n", total_res/nq);
-//
+        // evaluate
+        double total_res = 0;
+        for(int i = 0; i< nq; i++){
+            double res = input_index.Evaluate(k, query[i], info, &I[i * k]);
+            total_res += res;
+        }
+        printf("mAP:  %7lf\n", total_res/nq);
+
         printf("time: %lf \n", t3-t2);
         printf("I=\n");
         for(int i = 0; i < nq; i++) {
