@@ -35,6 +35,7 @@ add_subdirectory(util)
 add_subdirectory(gpu)
 add_subdirectory(cpu)
 add_subdirectory(test)
+add_subdirectory(binary)
 
 
 
