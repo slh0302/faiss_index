@@ -25,7 +25,7 @@ namespace feature_index{
         //net work init
         std::string pretrained_binary_proto(proto_weight);
         std::string proto_model_file(proto_file);
-        Net<float>* net(new Net<float>(proto_model_file, caffe::TEST));
+        Net<float>* net(new Net<float>(proto_model_file, caffe::TRAIN));
         net->CopyTrainedLayersFrom(pretrained_binary_proto);
         return net;
     }
@@ -273,6 +273,176 @@ namespace feature_index{
         std::cout<<"Successfully"<<std::endl;
         return feature_dbs;
     }
+
+    /**
+     * @param count
+     *      file count
+     * @param _net:
+     *      caffe net
+     * @return
+     *      float result
+     *
+     */
+    float* FeatureIndex::PictureFeatureExtraction(int count, caffe::Net<float> *_net, std::string blob_name) {
+        std::string extract_feature_blob_names(blob_name);
+        /////modify by su
+        std::cout<<"batch size: "<< _net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
+        int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
+        // init memory
+        float* feature_dbs = new float[count * TOTALBYTESIZE ];
+        std::vector<caffe::Blob<float>*> input_vec;
+        Datum datum;
+        const boost::shared_ptr<Blob<float> > feature_blob =
+                _net->blob_by_name(extract_feature_blob_names);
+        int batch_size = feature_blob->num();
+        int dim_features = feature_blob->count() / batch_size;
+        for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
+            //std::cout<<"start"<<std::endl;
+            _net->Forward(input_vec);
+            const float* feature_blob_data;
+            for (int n = 0; n < batch_size; ++n) {
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features ; ++d) {
+                    feature_dbs[d + (n + batch_index*batch_size)*dim_features] = feature_blob_data[d];
+                } // for (int d = 0; d < dim_features / 8; ++d)
+            }  // for (int n = 0; n < batch_size; ++n)
+        }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
+
+        // write the remain batch
+        bool isRemain=false;
+        int remain = count - num_mini_batches*(_net->blob_by_name(extract_feature_blob_names)->num());
+        if(remain >0 ){
+            isRemain=true;
+            _net->Forward(input_vec);
+        }
+        if(isRemain){
+            const float* feature_blob_data;
+            for (int n = 0; n < remain; ++n) {//data new
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features; ++d) {
+                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features +d] = feature_blob_data[d];
+                } // for (int d = 0; d < dim_features/8; ++d)
+            }  // for (int n = 0; n < remian; ++n)
+        }  // for (int i = 0; i < num_features; ++i)
+
+        std::cout<<"Successfully"<<std::endl;
+        return feature_dbs;
+
+    }
+
+
+    float* FeatureIndex::MemoryPictureFeatureExtraction(int count, caffe::Net<float> *_net, std::string blob_name, std::vector<cv::Mat> pic_list, std::vector<int> label) {
+
+        caffe::MemoryDataLayer<float> *m_layer = (caffe::MemoryDataLayer<float> *)_net->layers()[0].get();
+        m_layer->AddMatVector(pic_list, label);
+
+        std::string extract_feature_blob_names(blob_name);
+        /////modify by su
+        std::cout<<"batch size: "<< _net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
+        int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
+        // init memory
+        float* feature_dbs = new float[count * TOTALBYTESIZE ];
+        std::vector<caffe::Blob<float>*> input_vec;
+        Datum datum;
+        const boost::shared_ptr<Blob<float> > feature_blob =
+                _net->blob_by_name(extract_feature_blob_names);
+        int batch_size = feature_blob->num();
+        int dim_features = feature_blob->count() / batch_size;
+        for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
+            //std::cout<<"start"<<std::endl;
+            _net->Forward(input_vec);
+            const float* feature_blob_data;
+            for (int n = 0; n < batch_size; ++n) {
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features ; ++d) {
+                    feature_dbs[d + (n + batch_index*batch_size)*dim_features] = feature_blob_data[d] ;
+                } // for (int d = 0; d < dim_features / 8; ++d)
+            }  // for (int n = 0; n < batch_size; ++n)
+        }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
+
+        // write the remain batch
+        bool isRemain=false;
+        int remain = count - num_mini_batches*(_net->blob_by_name(extract_feature_blob_names)->num());
+        if(remain >0 ){
+            isRemain=true;
+            _net->Forward(input_vec);
+        }
+        if(isRemain){
+            const float* feature_blob_data;
+            for (int n = 0; n < remain; ++n) {//data new
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features; ++d) {
+                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features +d] = feature_blob_data[d];
+                } // for (int d = 0; d < dim_features/8; ++d)
+            }  // for (int n = 0; n < remian; ++n)
+        }  // for (int i = 0; i < num_features; ++i)
+
+        std::cout<<"Successfully"<<std::endl;
+        return feature_dbs;
+
+
+    }
+
+
+    /**
+     * 
+     * @param count
+     * @param dq
+     * @param _net
+     * @param blob_name
+     * @param pic_list
+     * @param label
+     */
+    void FeatureIndex::MemoryPictureFeatureExtraction(int count, float* dq, caffe::Net<float> *_net, std::string blob_name, std::vector<cv::Mat> pic_list, std::vector<int> label) {
+
+        caffe::MemoryDataLayer<float> *m_layer = (caffe::MemoryDataLayer<float> *)_net->layers()[0].get();
+        m_layer->AddMatVector(pic_list, label);
+
+        std::string extract_feature_blob_names(blob_name);
+        /////modify by su
+        std::cout<<"batch size: "<< _net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
+        int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
+        // init memory
+        float* feature_dbs = dq;
+        std::vector<caffe::Blob<float>*> input_vec;
+        Datum datum;
+        const boost::shared_ptr<Blob<float> > feature_blob =
+                _net->blob_by_name(extract_feature_blob_names);
+        int batch_size = feature_blob->num();
+        int dim_features = feature_blob->count() / batch_size;
+        for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
+            //std::cout<<"start"<<std::endl;
+            _net->Forward(input_vec);
+            const float* feature_blob_data;
+            for (int n = 0; n < batch_size; ++n) {
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features ; ++d) {
+                    feature_dbs[d + (n + batch_index*batch_size)*dim_features] = feature_blob_data[d] ;
+                } // for (int d = 0; d < dim_features / 8; ++d)
+            }  // for (int n = 0; n < batch_size; ++n)
+        }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
+
+        // write the remain batch
+        bool isRemain=false;
+        int remain = count - num_mini_batches*(_net->blob_by_name(extract_feature_blob_names)->num());
+        if(remain >0 ){
+            isRemain=true;
+            _net->Forward(input_vec);
+        }
+        if(isRemain){
+            const float* feature_blob_data;
+            for (int n = 0; n < remain; ++n) {//data new
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features; ++d) {
+                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features +d] = feature_blob_data[d];
+                } // for (int d = 0; d < dim_features/8; ++d)
+            }  // for (int n = 0; n < remian; ++n)
+        }  // for (int i = 0; i < num_features; ++i)
+
+        std::cout<<"Successfully"<<std::endl;
+
+    }
+
 
     /**
      *

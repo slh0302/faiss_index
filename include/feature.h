@@ -58,9 +58,9 @@ namespace feature_index {
         std::string BLOB_NAME ;// "fc_hash/relu";
         caffe::Net<float> *feature_extraction_net;
         std::map<int, int> LabelList;// Evaluate
-        // define private func
-        caffe::Net<float> *InitNet(std::string proto_file, std::string proto_weight);
     public:
+        // define init net work func
+        caffe::Net<float> *InitNet(std::string proto_file, std::string proto_weight);
         // define public mem and function
         // init function
         inline FeatureIndex(){ feature_extraction_net = NULL; det = NULL; }
@@ -77,9 +77,16 @@ namespace feature_index {
         uchar* MemoryFeatureExtraction( std::vector<cv::Mat> pic_list, std::vector<int> label );
         // detect one Picture
         DPicture* DetectPicture(const char* picName, int label);
-        // feature extract from picture
+        // feature extract from picture from proto file
         float* PictureFeatureExtraction(int count, std::string proto_file, std::string proto_weight, std::string blob_name);
-        // float to binary
+        // feature extract from picture init from net
+        float* PictureFeatureExtraction(int count, caffe::Net<float> * _net, std::string blob_name);
+        // feature extract from picture init from net and memory
+        float* MemoryPictureFeatureExtraction(int count, caffe::Net<float> * _net, std::string blob_name,
+                                              std::vector<cv::Mat> pic_list, std::vector<int> label);
+        void MemoryPictureFeatureExtraction(int count, float* dq, caffe::Net<float> *_net, std::string blob_name,
+                                       std::vector<cv::Mat> pic_list, std::vector<int> label);
+        /// / float to binary
         uchar* floatToUnsignedChar(const float* data, int count);
         // evaluate
         double Evaluate(int end, int label, Info_String* info, long* index);
