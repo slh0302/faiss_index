@@ -14,16 +14,13 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 
-using namespace FeatureBinary;
 
-
-int IndexTable[( 1<< BYTE_INDEX )];
-unsigned short Record[TOTALBYTESIZE / BYTE_INDEX];
-std::map<int, int> LabelList;
+int FeatureBinary::IndexTable[( 1<< BYTE_INDEX )];
+std::map<int, int> FeatureBinary::LabelList;
 
 
 // Basic Function
-void swap(SortTable *a, SortTable *b)
+void FeatureBinary::swap(FeatureBinary::SortTable *a, FeatureBinary::SortTable *b)
 {
     int tmp;
     tmp = a->sum;
@@ -36,48 +33,48 @@ void swap(SortTable *a, SortTable *b)
 }
 
 
-int partition(SortTable arr[], int left, int right, int pivotIndex){
+int FeatureBinary::partition(FeatureBinary::SortTable arr[], int left, int right, int pivotIndex){
     int storeIndex = left;
     int pivotValue = arr[pivotIndex].sum;
     int i;
 
-    swap(&arr[pivotIndex], &arr[right]);
+    FeatureBinary::swap(&arr[pivotIndex], &arr[right]);
 
     for (i = left; i < right; i++)
     {
         if (arr[i].sum <= pivotValue)
         {
-            swap(&arr[i], &arr[storeIndex]);
+            FeatureBinary::swap(&arr[i], &arr[storeIndex]);
             storeIndex++;
         }
     }
-    swap(&arr[storeIndex], &arr[right]);
+    FeatureBinary::swap(&arr[storeIndex], &arr[right]);
     return storeIndex;
 }
 
 
-int findKMax(SortTable arr[], int left, int right, int k){
+int FeatureBinary::findKMax(FeatureBinary::SortTable arr[], int left, int right, int k){
     int nRet;
     int pivotIndex = left;
 
     nRet = partition(arr, left, right, pivotIndex);
     if (nRet < k)
     {
-        return findKMax(arr, nRet + 1, right, k);
+        return FeatureBinary::findKMax(arr, nRet + 1, right, k);
     }
     else if (nRet > k)
     {
-        return findKMax(arr, left, nRet - 1, k);
+        return FeatureBinary::findKMax(arr, left, nRet - 1, k);
     }
     return nRet;
 }
 
 
-void InitIndex(void* p, unsigned char* filename, Info_String* in_str,int count){
+void FeatureBinary::InitIndex(void* p, unsigned char* filename, FeatureBinary::Info_String* in_str,int count){
 //
-    feature* temp = (feature*)p;
+    FeatureBinary::feature* temp = (FeatureBinary::feature*)p;
     int i = 0;
-    DataSet* s = new DataSet[count];
+    FeatureBinary::DataSet* s = new FeatureBinary::DataSet[count];
     while (i<count){
         for (int j = 0; j < TOTALBYTESIZE / BYTE_INDEX; j++){
             unsigned int y = 0;
@@ -92,7 +89,7 @@ void InitIndex(void* p, unsigned char* filename, Info_String* in_str,int count){
     temp->setInfo(in_str, count);
 }
 
-int* DoHandle(unsigned char * dat){
+int* FeatureBinary::DoHandle(unsigned char * dat){
     int * data = new int[TOTALBYTESIZE / BYTE_INDEX];
     for (int j = 0; j < TOTALBYTESIZE / BYTE_INDEX; j++){
         unsigned int y = 0;
@@ -105,33 +102,33 @@ int* DoHandle(unsigned char * dat){
 }
 
 
-void* CreateIndex(int size){
-    feature* temp = new feature;
+void* FeatureBinary::CreateIndex(int size){
+    FeatureBinary::feature* temp = new FeatureBinary::feature;
     return (void*)temp;
 }
 
 
-void CreateTable(const char * filename,int bits){
+void FeatureBinary::CreateTable(const char * filename,int bits){
     std::ifstream ifstream_in(filename, std::ios::in);
     int x, y;
     for (int i = 0; i < (1 << bits); i++){
         ifstream_in >> x >> y;
-        table[x]=y;
+        FeatureBinary::IndexTable[x]=y;
     }
     ifstream_in.clear();
     ifstream_in.close();
 }
 
 
-bool AddToIndex(void*p,int* data,const char* in){
-    feature* temp = (feature*)p;
+bool FeatureBinary::AddToIndex(void*p,int* data,const char* in){
+    FeatureBinary::feature* temp = new FeatureBinary::feature;
     int total = temp->getTotalSize();
     int curNum = temp->getCount();
     if (total <curNum+1){
-        DataSet* ne = new DataSet[curNum * 2];
-        Info_String* info_ne = new Info_String[curNum * 2];
-        memcpy(ne, temp->getDataSet(), sizeof(DataSet)*curNum);
-        memcpy(info_ne, temp->getInfoSet(), sizeof(Info_String)*curNum);
+        FeatureBinary::DataSet* ne = new FeatureBinary::DataSet[curNum * 2];
+        FeatureBinary::Info_String* info_ne = new FeatureBinary::Info_String[curNum * 2];
+        memcpy(ne, temp->getDataSet(), sizeof(FeatureBinary::DataSet)*curNum);
+        memcpy(info_ne, temp->getInfoSet(), sizeof(FeatureBinary::Info_String)*curNum);
         memcpy(ne[curNum].data,  data,sizeof(int[64]));
         strcpy(info_ne[curNum].info, in);
         temp->deleteData();
@@ -141,19 +138,19 @@ bool AddToIndex(void*p,int* data,const char* in){
     }
     else{
         memcpy(&(temp->getDataSet()[curNum]), data, sizeof(int[64]));
-        memcpy(&(temp->getInfoSet()[curNum]),in,  sizeof(Info_String));
+        memcpy(&(temp->getInfoSet()[curNum]),in,  sizeof(FeatureBinary::Info_String));
         temp->setCount(curNum + 1);
     }
     return true;
 }
 
 
-bool LoadIndex(void* p, const char* filename,const char* info_file, int count){
+bool FeatureBinary::LoadIndex(void* p, const char* filename,const char* info_file, int count){
     FILE* in = fopen(filename, "rb");
     FILE* in_info = fopen(info_file, "rb");
-    feature* temp = (feature*)p;
-    DataSet* da = new DataSet[count];
-    Info_String* inst = new Info_String[count];
+    FeatureBinary::feature* temp = (FeatureBinary::feature*)p;
+    FeatureBinary::DataSet* da = new FeatureBinary::DataSet[count];
+    FeatureBinary::Info_String* inst = new FeatureBinary::Info_String[count];
 
     fread(da, sizeof(DataSet) , count, in);
     fread(inst, sizeof(Info_String), count, in_info);
@@ -165,24 +162,25 @@ bool LoadIndex(void* p, const char* filename,const char* info_file, int count){
     return true;
 }
 
-bool Load_SpData(DataSet*da, Info_String* inst, const char* filename,const char* info_file, int count,int sp_begin){
+bool FeatureBinary::Load_SpData(FeatureBinary::DataSet*da, FeatureBinary::Info_String* inst, const char* filename,const char* info_file, int count,int sp_begin){
     FILE* in = fopen(filename, "rb");
     FILE* in_info = fopen(info_file, "rb");
-    fread(&da[sp_begin], sizeof(DataSet) , count, in);
-    fread(&inst[sp_begin], sizeof(Info_String), count, in_info);
+    fread(&da[sp_begin], sizeof(FeatureBinary::DataSet) , count, in);
+    fread(&inst[sp_begin], sizeof(FeatureBinary::Info_String), count, in_info);
     fclose(in);
     fclose(in_info);
     return true;
 }
 
-bool DeleteIndex(void* p){
-    delete[] p;
+bool FeatureBinary::DeleteIndex(void* p){
+    FeatureBinary::feature* temp = new FeatureBinary::feature;
+    delete[] temp;
     return true;
 }
 
 
-bool ArchiveIndex(void* p, const char* filename, const char* info_file,int count, char mode){
-    feature* temp = (feature*)p;
+bool FeatureBinary::ArchiveIndex(void* p, const char* filename, const char* info_file,int count, char mode){
+    FeatureBinary::feature* temp = new FeatureBinary::feature;
     FILE* os, *os_info;
     if (mode == 'a'){
         os = fopen(filename, "ab");
@@ -200,18 +198,19 @@ bool ArchiveIndex(void* p, const char* filename, const char* info_file,int count
     return true;
 }
 
-int retrival(int* input, DataSet* get_t,Info_String* get_info, int total,string& result,int bits,int LIMIT,SortTable* sorttable){
+int FeatureBinary::retrival(int* input, FeatureBinary::DataSet* get_t, FeatureBinary::Info_String* get_info,
+                            int total,string& result,int bits,int LIMIT, FeatureBinary::SortTable* sorttable){
     int calc = 0;
     int i = 0, indexLine = 0;
     int sum = 0;
-
+    unsigned short Record[TOTALBYTESIZE / BYTE_INDEX];
     std::cout<<"start"<<std::endl;
     while (calc < total){
         sum = 0;
-        memset(record, 0, sizeof(record));
+        memset(Record, 0, sizeof(Record));
         for (i = 0; i < TOTALBYTESIZE / bits; i++){
-            record[i] = input[i] ^get_t[calc].data[i];
-            sum += table[record[i]];
+            Record[i] = input[i] ^get_t[calc].data[i];
+            sum += FeatureBinary::IndexTable[Record[i]];
             if (sum > LIMIT){
                 break;
             }
@@ -229,7 +228,7 @@ int retrival(int* input, DataSet* get_t,Info_String* get_info, int total,string&
     std::cout<<"done "<<indexLine<<std::endl;
     int num_find=300<indexLine?300:indexLine;
     std::cout<<"num_find "<<num_find<<std::endl;
-    findKMax(sorttable, 0, indexLine - 1,num_find);
+    FeatureBinary::findKMax(sorttable, 0, indexLine - 1,num_find);
     std::sort(sorttable, sorttable + num_find-1);
     result = get_info[sorttable[0].info].info;
     cout<<"done sort"<<endl;

@@ -24,6 +24,9 @@ add_executable(faissSystemMap ${SOURCE_CAR_MAP_SYSTEM})
 set(SOURCE_SERVER server.cpp)
 add_executable(Server ${SOURCE_SERVER})
 
+set(SOURCE_MAP_SERVER mapServer.cpp)
+add_executable(mapServer ${SOURCE_MAP_SERVER})
+
 target_link_libraries(
         extract_feature
         libfaiss.a
@@ -125,6 +128,28 @@ target_link_libraries(
         Server
         gpufaiss
         faiss
+        libfeature.so
+        libssd.so
+        libboost_system.so
+        libboost_filesystem.so
+        libboost_thread.so
+        libopencv_core.so
+        libopencv_imgcodecs.so
+        libopencv_imgproc.so
+        libmkl_intel_ilp64.so
+        libmkl_core.so
+        libmkl_gnu_thread.so
+        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
+        libglog.so
+        libcudart.so
+        libcublas.so
+)
+
+target_link_libraries(
+        mapServer
+        gpufaiss
+        faiss
+        libbinary.so
         libfeature.so
         libssd.so
         libboost_system.so

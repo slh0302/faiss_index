@@ -2,7 +2,7 @@
 // Created by slh on 17-5-11.
 //
 
-#include <feature.h>
+#include  <feature.h>
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/gpu/GpuIndexIVF.h>
 #include <faiss/gpu/GpuIndexFlat.h>

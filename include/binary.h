@@ -26,7 +26,6 @@ namespace FeatureBinary {
 
 //记录一定位数的特征
     extern int IndexTable[(1 << BYTE_INDEX)];
-    extern unsigned short Record[TOTALBYTESIZE / BYTE_INDEX];
     extern map<int, int> LabelList;
 
 

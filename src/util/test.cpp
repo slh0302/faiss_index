@@ -10,10 +10,6 @@
 using namespace std;
 using namespace feature_index;
 
-struct Info_String
-{
-    char info[100];
-};
 
 int main(int argc,char** argv){
     google::InitGoogleLogging(argv[0]);

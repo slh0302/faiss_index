@@ -19,6 +19,7 @@
 #include <faiss/gpu/GpuIndexIVFPQ.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/index_io.h>
+#include <sstream>
 #include <vector>
 #include <unistd.h>
 #include <string.h>
@@ -31,8 +32,8 @@ std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color
 std::string person_proto_file = "/home/slh/faiss_index/model/deploy_person_memory.prototxt";
 std::string person_proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
 // Binary Model File
-std::string binary_proto_file = "./examples/_temp/deploy_googlenet_hash.prototxt";
-std::string binary_proto_weight = "./examples/_temp/wd_google_all_hash_relu_iter_120000.caffemodel";
+std::string binary_proto_file = "/home/slh/faiss_index/model/deploy_googlenet_hash.prototxt";
+std::string binary_proto_weight = "/home/slh/faiss_index/model/wd_google_all_hash_relu_iter_120000.caffemodel";
 // task list
 
 // time func
@@ -50,13 +51,13 @@ void LoadVehicleSpace();
 void LoadPersonSpace();
 
 // client thread
-void ClientVehcileThread(int client_sockfd, char* remote_addr,
+void ClientVehicleThread(int client_sockfd, char* remote_addr,
                   feature_index::FeatureIndex feature_index,
                   faiss::gpu::GpuIndexIVFPQ* index, caffe::Net<float>* net);
 
 // client thread
 void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::FeatureIndex feature_index,
-                  void* p, Caffe::Net<float>* bnet);
+                  void* p, caffe::Net<float>* bnet);
 
 // client person
 // client thread
@@ -66,7 +67,7 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
 
 // info string
 #define DATA_COUNT 43455
-#define DATA_COUNT_PERSON 169737
+#define DATA_COUNT_PERSON 8046
 #define DATA_BINARY 371
 #define FEATURE_GPU 7
 #define FAISS_GPU 10
@@ -81,10 +82,10 @@ Info_String* info_person;
 
 // vehicle space
 std::string spaceVehicle[100];
-std::string spaceOfNumVehicle[100];
+std::string spaceOfNameVehicle[100];
 // person space
 std::string spacePerson[100];
-std::string spaceOfNumPerson[100];
+std::string spaceOfNamePerson[100];
 
 int main(int argc, char *argv[])
 {
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
 
     // Load Perosn Info
     info_person = new Info_String[DATA_COUNT_PERSON];
-    fin = fopen("/home/slh/data_person_169737_info","rb");
+    fin = fopen("/home/slh/data_person_map_8046_info","rb");
     fread(info_person, sizeof(Info_String),DATA_COUNT_PERSON,fin);
     fclose(fin);
     std::cout<<"Person Info File Init Done"<<std::endl;
@@ -117,12 +118,25 @@ int main(int argc, char *argv[])
     std::cout<<"Faiss Init Done"<<std::endl;
 
     // Init person Faiss GPU Index
-    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_new.faissindex";
+    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_map_nodata.faissindex";
     faiss::gpu::StandardGpuResources resources_person;
     faiss::Index* cpu_index_person = faiss::read_index(personFileName.c_str(), false);
     faiss::gpu::GpuIndexIVFPQ* index_person = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
             faiss::gpu::index_cpu_to_gpu(&resources_person,FAISS_PERSON_GPU,cpu_index_person));
     std::cout<<"Person Faiss Init Done"<<std::endl;
+
+    // read data
+    float* dataPerson = new float[DATA_COUNT_PERSON*1024];
+    //   std::string filename = argv[1];
+    // file read data
+    FILE* f = fopen ("/home/slh/data_person_map_8046","rb");
+    if(f == NULL){
+        std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+        return 0;
+    }
+    fread(dataPerson,sizeof(float), DATA_COUNT_PERSON*1024, f);
+    index_person->add( DATA_COUNT_PERSON ,dataPerson);
+
 
     // Init Caffe Model Net
     caffe::Net<float>* net = fea_index.InitNet(proto_file, proto_weight);
@@ -136,21 +150,22 @@ int main(int argc, char *argv[])
     void * p = FeatureBinary::CreateIndex(0);
 
     // Load Binary Table
-    std::string table_filename="./examples/_temp/index_file";
+    std::string table_filename="/home/slh/faiss_index/index_store/table.index";
     if(!std::fstream(table_filename.c_str())) {
         std::cout << "Table File Wrong" << std::endl;
-        return;
+        return 1;
     }
-    CreateTable(table_filename.c_str(), 16);
+    FeatureBinary::CreateTable(table_filename.c_str(), 16);
 
     // Load Binary Index
-    std::string table_filename="./examples/_temp/index_file";
 
     // TODO:: Index File Name Change
-    std::string IndexFileName("/home/slh/data/demo/");
+    std::string IndexFileName("/home/slh/data/demo/data_binary_map_371");
     std::string IndexInfoName = IndexFileName + "_info";
-    LoadIndex(p, IndexFileName.c_str(), IndexInfoName.c_str(), DATA_BINARY);
+    FeatureBinary::LoadIndex(p, IndexFileName.c_str(), IndexInfoName.c_str(), DATA_BINARY);
 
+
+    //std::cout<<"data Set "<<((FeatureBinary::feature*)p)->getDataSet()[1].data[1]<<std::endl;
     // Load Binary Caffe Model
     caffe::Net<float>* bnet = fea_index.InitNet(binary_proto_file, binary_proto_weight);
     std::cout<<"Binary Caffe Net Init Done"<<std::endl;
@@ -211,25 +226,36 @@ int main(int argc, char *argv[])
         if(len=recv(client_sockfd,buf,BUFSIZ,0)>0){
             buf[len]='\0';
             typeNum = atoi(buf);
+            send(client_sockfd,"Welcome\n",7,0);
         }
-
         switch (typeNum){
             case 0:
-                boost::thread threads(boost::bind(&ClientVehicleThread, client_sockfd,
-                                      inet_ntoa(remote_addr.sin_addr), fea_index, index, net));
+            {
+                //// client thread
+//                void ClientVehicleThread(int client_sockfd, char* remote_addr,
+//                                         feature_index::FeatureIndex feature_index,
+//                                         faiss::gpu::GpuIndexIVFPQ* index, caffe::Net<float>* net);
+                boost::thread thread_1(boost::bind(&ClientVehicleThread, client_sockfd,
+                                                   inet_ntoa(remote_addr.sin_addr), fea_index, index, net));
                 break;
+            }
+
 
             case 1:
-                // binary situation
-                boost::thread threads(boost::bind(&ClientPersonThread, client_sockfd,
-                            inet_ntoa(remote_addr.sin_addr), fea_index, index_person, pnet));
+            {
+                boost::thread thread_2(boost::bind(&ClientPersonThread, client_sockfd,
+                                                   inet_ntoa(remote_addr.sin_addr), fea_index, index_person, pnet));
                 break;
+            }
+                // binary situation
+
 
             case 2:
-                // binary situation
-                boost::thread threads(boost::bind(&ClientBinaryThread, client_sockfd,
-                    inet_ntoa(remote_addr.sin_addr), p, bnet));
+            {
+                boost::thread thread_3(boost::bind(&ClientBinaryThread, client_sockfd,
+                                                   inet_ntoa(remote_addr.sin_addr),fea_index, p, bnet));
                 break;
+            }
             case -1:
                 break;
         }
@@ -245,7 +271,8 @@ int main(int argc, char *argv[])
 void ClientVehicleThread(int client_sockfd, char* remote_addr,
                   feature_index::FeatureIndex feature_index,
                   faiss::gpu::GpuIndexIVFPQ* index,
-                  caffe::Net<float>* net){
+                  caffe::Net<float>* net)
+{
     int len = 0;
     char buf[BUFSIZ];
     std::vector<std::string> run_param;
@@ -301,17 +328,17 @@ void ClientVehicleThread(int client_sockfd, char* remote_addr,
 
         for (int i = 0; i < nq; i++) {
             for (int j = 0; j < k; j++) {
-                std::string temp;
+                std::string tempInfo;
 
-                temp = info[nns[j + i * k]].info;
+                tempInfo = info[nns[j + i * k]].info;
 
                 //temp = info_person[nns[j + i * k]].info;
 
                 //std::cout<<temp<<std::endl;
-                if(temp.length() < 5){
+                if(tempInfo.length() < 5){
                     continue;
                 }
-                boost::split(file_name_list, temp, boost::is_any_of(" ,!"), boost::token_compress_on);
+                boost::split(file_name_list, tempInfo, boost::is_any_of(" ,!"), boost::token_compress_on);
                 cv::Mat im = cv::imread(root_dir + file_name_list[0]);
                 int x = atoi(file_name_list[1].c_str());
                 int y = atoi(file_name_list[2].c_str());
@@ -353,7 +380,8 @@ void ClientVehicleThread(int client_sockfd, char* remote_addr,
 void ClientPersonThread(int client_sockfd, char* remote_addr,
                          feature_index::FeatureIndex feature_index,
                          faiss::gpu::GpuIndexIVFPQ* index_person,
-                         caffe::Net<float>* pnet){
+                         caffe::Net<float>* pnet)
+{
     int len = 0;
     char buf[BUFSIZ];
     int numPicInOnePlacePerson[100] = {0};
@@ -371,7 +399,7 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
         std::string file_name = run_param[0];
         int count = atoi(run_param[1].c_str());
         int Limit = atoi(run_param[2].c_str());
-        int type = atoi(run_param[3].c_str());
+
         // read data
         std::vector<cv::Mat> pic_list;
         std::vector<int> label;
@@ -385,8 +413,9 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
         feature_index.InitGpu("GPU", FEATURE_GPU);
         std::cout<<"GPU Init Done"<<std::endl;
         float *data ;
+        double t0 = elapsed();
         data = feature_index.MemoryPictureFeatureExtraction(count, pnet, "loss3/feat_normalize", pic_list, label);
-        std::cout<<"done data"<<std::endl;
+       // std::cout<<"done data"<<std::endl;
 
         // Retrival k-NN
         int k = 20;
@@ -394,8 +423,8 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
         // result return
         std::vector<faiss::Index::idx_t> nns (k * nq);
         std::vector<float>               dis (k * nq);
-        index->setNumProbes(Limit);
-        double t0 = elapsed();
+        index_person->setNumProbes(Limit);
+
         index_person->search(nq, data, k, dis.data(), nns.data());
         double t1 = elapsed();
 
@@ -405,25 +434,23 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
         // output the result
         std::vector<std::string> file_name_list;
         std::string root_dir;
-        root_dir = "/media/vehicle_res/person/out/";
+        root_dir = "/media/vehicle_res/person/out826/";
         std::map<int, int*> spaceMap ;
         for (int i = 0; i < nq; i++) {
             for (int j = 0; j < k; j++) {
-                std::string temp;
-                temp = info_person[nns[j + i * k]].info;
-
-                //std::cout<<temp<<std::endl;
-                if(temp.length() < 5){
+                std::string tempInfo;
+                tempInfo = info_person[nns[j + i * k]].info;
+                if(tempInfo.length() < 5){
                     continue;
                 }
-                boost::split(file_name_list, temp, boost::is_any_of(" ,!"), boost::token_compress_on);
+                boost::split(file_name_list, tempInfo, boost::is_any_of(" ,!"), boost::token_compress_on);
                 cv::Mat im = cv::imread(root_dir + file_name_list[0]);
                 int y = atoi(file_name_list[1].c_str());
                 int x = atoi(file_name_list[2].c_str());
                 int width = atoi(file_name_list[3].c_str());
                 int height = atoi(file_name_list[4].c_str());
                 int numSpace = atoi(file_name_list[5].c_str());
-                //std::cout<<x<<y<<width<<height<<std::endl;
+
                 rectangle(im,cvPoint(x,y),cvPoint(x+width, y+height),cv::Scalar(0,0,255),3,1,0);
 
                 //
@@ -455,23 +482,24 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
         }
 
         std::map<int, int*>::iterator it;
-        result_path = result_path + spaceMap.size() + ",";
+        std::ofstream reout("/home/slh/pro/run/runResult/map.txt",std::ios::out);
+        reout<<(t1 - t0)<<std::endl;
         for(it = spaceMap.begin();it != spaceMap.end(); it++){
             int numSp = it->first;
             int* listPic = it->second;
             int totalPicNum = numPicInOnePlacePerson[numSp];
-            result_path = result_path + spaceOfNumPerson[numSp] + "---" + totalPicNum + "个结果" + ",";
-            result_path = result_path + totalPicNum + ",";
+            reout << spaceOfNamePerson[numSp]<< "---" << totalPicNum << "个结果" <<std::endl;
+            reout << totalPicNum << std::endl;
             // point
-            result_path = result_path + spacePerson[numSp] + ",";
+            reout << spacePerson[numSp] <<std::endl;
             // content and url
             for(int o = 0 ;o < totalPicNum; o ++ ){
                 // first is content
-                result_path = result_path + locationStrPerson[listPic[o]] + ",";
+                reout << locationStrPerson[listPic[o]] << std::endl;
             }
         }
-
-        sprintf(send_buf, "%lf,%s ",t1-t0, result_path.c_str());
+        reout.close();
+        sprintf(send_buf, "Done Work OK\0");
         std::string te(send_buf);
         int send_len = te.length();
         if(send(client_sockfd,send_buf,send_len,0)<0)
@@ -492,7 +520,7 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
     int numPicInOnePlaceVehicle[100] = {0};
     std::string locationStrVehicle[20];
     std::vector<std::string> run_param;
-    FeatureBinary::featrue* tempFeature = (FeatureBinary::featrue)* p;
+    FeatureBinary::feature* tempFeature = (FeatureBinary::feature*) p;
     if((len=recv(client_sockfd,buf,BUFSIZ,0))>0)
     {
         buf[len]='\0';
@@ -505,7 +533,6 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
         std::string file_name = run_param[0];
         int count = atoi(run_param[1].c_str());
         int Limit = atoi(run_param[2].c_str());
-        int type = atoi(run_param[3].c_str());
 
         // read data
         std::vector<cv::Mat> pic_list;
@@ -519,11 +546,10 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
         // Extract feature
         feature_index.InitGpu("GPU", FEATURE_GPU);
         std::cout<<"GPU Init Done"<<std::endl;
-        unsigned char *data ;
-
-        // TODO: Binary Memory change
-        data = feature_index.MemoryPictureFeatureExtraction(count, pnet, "fc_hash/relu", pic_list, label);
-        std::cout<<"done data"<<std::endl;
+        unsigned char *data = new unsigned char[ 1024 ];
+        double t0 = elapsed();
+        feature_index.MemoryPictureFeatureExtraction(count, data, bnet, "fc_hash/relu", pic_list, label);
+        //std::cout<<"done data"<<std::endl;
 
         // Retrival k-NN
         int k = 20;
@@ -532,13 +558,13 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
         std::vector<faiss::Index::idx_t> nns (k * nq);
         std::vector<float>               dis (k * nq);
 
-        SortTable* sorttable=new SortTable[DATA_BINARY];
-        DataSet* get_t=temp->getDataSet();
-        Info_String* get_info=temp->getInfoSet();
+        FeatureBinary::SortTable* sorttable=new FeatureBinary::SortTable[DATA_BINARY];
+        FeatureBinary::DataSet* get_t=tempFeature->getDataSet();
+        FeatureBinary::Info_String* get_info=tempFeature->getInfoSet();
         std::string res;
-        double t0 = elapsed();
+        int* dt = FeatureBinary::DoHandle(data);
         // bianary search
-        int index_num = retrival(data, get_t, get_info, total, res, 16, Limit, sorttable);
+        int index_num = FeatureBinary::retrival(dt, get_t, get_info, DATA_BINARY, res, 16, Limit, sorttable);
         double t1 = elapsed();
         // handle result
         char send_buf[BUFSIZ];
@@ -550,13 +576,13 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
         std::string root_dir = "/home/slh/data/demo/temp2/";
         int return_num= 20<index_num ? 20:index_num;
         for (int j = 0; j < return_num; j++) {
-            std::string temp = get_info[sorttable[j].info].info;
+            std::string tempInfo = get_info[sorttable[j].info].info;
             //std::cout<<temp<<std::endl;
-            if(temp.length() < 5){
+            if(tempInfo.length() < 5){
                 continue;
             }
             //std::cout<<temp<<std::endl;
-            boost::split(file_name_list, temp, boost::is_any_of(" ,!"), boost::token_compress_on);
+            boost::split(file_name_list, tempInfo, boost::is_any_of(" ,!"), boost::token_compress_on);
             cv::Mat im = cv::imread(root_dir + file_name_list[0]);
             int x = atoi(file_name_list[1].c_str());
             int y = atoi(file_name_list[2].c_str());
@@ -582,35 +608,34 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
             IplImage qImg;
             qImg = IplImage(im); // cv::Mat -> IplImage
             char stemp[200];
-            std::string str_name = argv[4];
-            int index_slash = str_name.find_last_of('/');
-            int index_dot = str_name.find_last_of('.');
-            str_name = str_name.substr(index_slash+1,index_dot- index_slash-1);
-            sprintf(stemp,"/home/slh/pro/run/originResult/%s_%d.jpg",str_name.c_str(),j);
+            int index_slash = file_name.find_last_of('/');
+            int index_dot = file_name.find_last_of('.');
+            file_name = file_name.substr(index_slash+1,index_dot- index_slash-1);
+            sprintf(stemp,"/home/slh/pro/run/originResult/%s_%d.jpg",file_name.c_str(),j);
             cvSaveImage(stemp,&qImg);
             locationStrVehicle[j] = stemp;
         }
 
 
-       // std::ofstream reout("/home/slh/pro/run/runResult/map.txt",std::ios::out);
+        std::ofstream reout("/home/slh/pro/run/runResult/map.txt",std::ios::out);
         std::map<int, int*>::iterator it;
-        result_path = result_path + spaceMap.size() + ",";
+        reout<<(t1 - t0)<<std::endl;
         for(it = spaceMap.begin();it != spaceMap.end(); it++){
             int numSp = it->first;
             int* listPic = it->second;
             int totalPicNum = numPicInOnePlaceVehicle[numSp];
-            result_path = result_path + spaceOfNumVehicle[numSp] + "---" + totalPicNum + "个结果" + ",";
-            result_path = result_path + totalPicNum + ",";
+            reout << spaceOfNameVehicle[numSp]<< "---" << totalPicNum << "个结果" <<std::endl;
+            reout << totalPicNum << std::endl;
             // point
-            result_path = result_path + spaceVehicle[numSp] + ",";
+            reout << spaceVehicle[numSp] <<std::endl;
             // content and url
             for(int o = 0 ;o < totalPicNum; o ++ ){
                 // first is content
-                result_path = result_path + locationStrVehicle[listPic[o]] + ",";
+                reout << locationStrVehicle[listPic[o]] << std::endl;
             }
         }
-
-        sprintf(send_buf, "%lf,%s ",t1-t0, result_path.c_str());
+        reout.close();
+        sprintf(send_buf, "OK\0");
         std::string te(send_buf);
         int send_len = te.length();
         if(send(client_sockfd,send_buf,send_len,0)<0)
@@ -634,7 +659,7 @@ void LoadVehicleSpace(){
     while(in>>num>>spaceNum>>temp){
 
         spaceVehicle[num] = temp;
-        spaceOfNumVehicle[num] = spaceNum;
+        spaceOfNameVehicle[num] = spaceNum;
         // std::cout<<num<<" "<<spaceOfNum[num]<<std::endl;
     }
     in.close();
@@ -651,7 +676,7 @@ void LoadPersonSpace(){
     while(in>>num>>spaceNum>>temp){
 
         spacePerson[num] = temp;
-        spaceOfNumPerson[num] = spaceNum;
+        spaceOfNamePerson[num] = spaceNum;
         // std::cout<<num<<" "<<spaceOfNum[num]<<std::endl;
     }
     in.close();

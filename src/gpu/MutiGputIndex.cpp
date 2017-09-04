@@ -1,10 +1,13 @@
+//
+// Created by slh on 17-9-2.
+//
+
+
 #include <feature.h>
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/gpu/GpuIndexIVFPQ.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/index_io.h>
-#include <faiss/gpu/IndexProxy.h>
-
 double elapsed ()
 {
     struct timeval tv;
@@ -22,7 +25,7 @@ int main(int argc, char** argv){
     }
     int count = atoi(argv[2]);
     float* data = new float[count*1024];
- //   std::string filename = argv[1];
+    //   std::string filename = argv[1];
     // file read data
     FILE* f = fopen (argv[1],"rb");
     if(f == NULL){
@@ -68,7 +71,7 @@ int main(int argc, char** argv){
         std::cout<<std::endl;
     }
     int d = 1024;
-   // 4*sqrt(count)
+    // 4*sqrt(count)
     int ncentroids = int(4 * sqrt(count));
     faiss::gpu::StandardGpuResources resources;
 
@@ -117,6 +120,6 @@ int main(int argc, char** argv){
         }
 
     }
-	return 0;
+    return 0;
 
 }
