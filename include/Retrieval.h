@@ -38,31 +38,39 @@ namespace retrieval{
     public:
         /// Init FeatureIndex
         FeatureIndex(int NumOfData){
-                _dimension = 1024; _groups = 64; _nlist = 4*sqrt(NumOfData); _nprobe = 15;
+                _dimension = 1024; _nlist = 4*sqrt(NumOfData);
+                   _nprobe = 15; _groups = 64; _nbits = 8;
                 _quantizer = new faiss::IndexFlatL2(_dimension);
-                    _index = new faiss::IndexIVFPQ(&_quantizer, _dimension, _nlist, _groups, _nbits);
-            _index->verbose = true;
+                    _index = new faiss::IndexIVFPQ(_quantizer, _dimension, _nlist, _groups, _nbits);
+           _index->verbose = true;
             _index->nprobe = _nprobe;  }
 
-        FeatureIndex(int dimension, int nlist, int groups, int nbits, int NumOfData);
+        FeatureIndex(int dimension, int nlist, int groups, int nbits);
 
         /// Train FeatureIndex
         void TrainIndex(int count, float* data);
         bool isTrainIndex(){ return _index->is_trained; }
 
         /// Modify FeatureIndex Param
-        //  train verbose, default true
+        ///  train verbose, default true
         void setTranVerbose(bool status){ _index->verbose = status; }
         void setProbe(int nprobe){ this->_nprobe = nprobe; _index->nprobe = _nprobe; }
+
+        /// get index Param
         int getProbe(){ return _nprobe; }
+        int getDimension(){ return _dimension; }
+        long getTotalIndex();
 
         /// FeatureIndex IO
         void WriteIndexToFile(char* saveFileName);
         void ReadIndexFromFile(char* saveFileName);
 
-        /// Add/Delete FeatureIndex/FeatureIndex List
-        void AddItemToFeature(float data);
+        /// Add/Delete FeatureIndex
+        void AddItemToFeature(float* data);
         void DeleteItemFromFeature(int id);
+
+        /// Add/Delete FeatureIndex List,
+        /// Delete scope: [beginId, beginId + numOfdata)
         void AddItemList(int numOfdata, float* data);
         void DeleteItemList(int beginId, int numOfdata);
 
@@ -84,8 +92,8 @@ namespace retrieval{
         int _nbits;
         /// probe centroids
         int _nprobe;
-
-
-    }
+        /// data count
+        int _size;
+    };
 }
 #endif //FAISS_INDEX_RETRIEVAL_H
