@@ -56,10 +56,10 @@ int main(int argc, char** argv){
 
     // query input
     feature_index::FeatureIndex input_index;
-    input_index.InitGpu("GPU", 15);
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
-    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
+    input_index.InitGpu("GPU", 14);
+    std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
+    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
+    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
     std::cout<<"done extract"<<std::endl;
     for(int i =0 ;i< 10;i++){
         for(int j=0 ;j<1024;j++){
@@ -79,7 +79,7 @@ int main(int argc, char** argv){
             false,
             faiss::METRIC_L2);
     index.verbose = true;
-    index.train(count, data);
+    index.train(count/2, data);
     std::cout<<"done"<<std::endl;
 
 
