@@ -8,41 +8,46 @@
 using namespace std;
 using namespace feature_index;
 
+
 int main(int argc,char** argv){
     google::InitGoogleLogging(argv[0]);
     FeatureIndex index = FeatureIndex();
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_googlenet_hash.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_all_hash_relu_iter_120000.caffemodel";
+    std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
+    std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
 
     if(argc <= 1 ){
         std::cout<<"argc : "<<argc<<" is not enough"<<std::endl;
         return 1;
     }
-    ofstream out("/home/slh/caffe-ssd/detecter/examples/_temp/file_list",std::ios::out);
-    for ( int i = 1;i<argc;i++){
-        out<<argv[i]<<" "<<i<<endl;
+
+    int count = atoi(argv[2]);
+    string file_prefix = argv[1];
+    ifstream file_list("/home/slh/data/peta/list/" + file_prefix + ".list", ios::in);
+    string* info_array = new string[count];
+    string name = "";
+    string ROOT_DIR = "/home/slh/data/peta/" + file_prefix + "/archive/";
+    cout << ROOT_DIR << endl;
+    ofstream out("/home/slh/caffe-ssd/detecter/examples/_temp/file_list", std::ios::out);
+    for ( int i = 0;i<count;i++){
+        file_list >> name;
+        info_array[i] = name;
+        out<<ROOT_DIR+name<<" "<<i<<endl;
     }
     out.close();
-    float * xq = index.PictureFeatureExtraction(argc - 1 ,proto_file.c_str(), proto_weight.c_str(), "fc_hash/relu");
+    file_list.close();
+    index.InitGpu("GPU", 11);
+    float * xq = index.PictureFeatureExtraction(count ,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
 
-    for ( int i = 0;i<argc-1;i++){
+    string result_file = file_prefix + ".out";
+    ofstream result(result_file, ios::out);
+    for ( int i = 0;i<count;i++){
+        result<< info_array[i] << " ";
         for( int j=0 ;j<1024;j++){
-            cout<<xq[j+i*1024]<<" ";
+            result<<xq[j+i*1024]<<" ";
         }
-        cout<<endl;
-        cout<<endl;
+        result<<endl;
     }
-    for ( int i = 0;i<argc-1;i++){
-        for( int j=0 ;j<1024;j++){
-            if(xq[j+i*1024] > 0.01){
-                cout<<1<<" ";
-            }
-            else
-                cout<<0<<" ";
-        }
-        cout<<endl;
-        cout<<endl;
-    }
+    result.close();
 
     return 0;
 }

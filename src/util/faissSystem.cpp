@@ -15,7 +15,8 @@
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/index_io.h>
 
-#define DATA_COUNT 1000000
+
+#define DATA_COUNT 78978
 double elapsed ()
 {
     struct timeval tv;
@@ -28,8 +29,8 @@ struct Info_String
     char info[100];
 };
 
-std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
-std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
+std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
+std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
 
 // load from index file, and search
 int main(int argc, char** argv){
@@ -43,7 +44,7 @@ int main(int argc, char** argv){
     int Limit = atoi(argv[3]);
     // file read
     Info_String* info = new Info_String[DATA_COUNT];
-    FILE* fin = fopen("/home/slh/model_color_1000000_withInfo_info","rb");
+    FILE* fin = fopen("/home/slh/data/data_person_cuhk03_78978_info","rb");
     fread(info, sizeof(Info_String),DATA_COUNT,fin);
     fclose(fin);
     // read index
@@ -70,7 +71,8 @@ int main(int argc, char** argv){
     }
     out.close();
     feature_index::FeatureIndex fea_index;
-    float * xq = fea_index.PictureFeatureExtraction(argc - 4 ,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
+    fea_index.InitGpu("GPU", 14);
+    float * xq = fea_index.PictureFeatureExtraction(argc - 4 ,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
 
     // para k-NN
     int k = 20;
@@ -87,10 +89,13 @@ int main(int argc, char** argv){
 
     // output the result
     std::ofstream reout("/home/slh/pro/run/runResult/result.txt",std::ios::out);
+    // TODO: modify picture info
     reout<<t1 - t0<<std::endl;
     for (int i = 0; i < nq; i++) {
         for (int j = 0; j < k; j++) {
             std::string temp = info[nns[j + i * k]].info;
+            // TODO: show origin picture
+
             if(temp.length() < 5){
                 continue;
             }

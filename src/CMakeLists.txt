@@ -18,7 +18,7 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/../
         ${PROJECT_SOURCE_DIR}/../faiss/gpu/
         ${PROJECT_SOURCE_DIR}/../faiss/gpu/utils
-        /opt/intel/compilers_and_libraries/linux/mkl/include/
+        /opt/intel/mkl/include/
         /usr/local/cuda/include
 )
 link_directories(
@@ -26,7 +26,7 @@ link_directories(
         ${PROJECT_SOURCE_DIR}/../faiss
         ${PROJECT_SOURCE_DIR}/../faiss/gpu/
         /usr/lib
-        /opt/intel/compilers_and_libraries/linux/mkl/lib/intel64
+        /opt/intel/mkl/lib/intel64
         /usr/local/lib
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib
 )

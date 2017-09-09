@@ -28,10 +28,16 @@ int main(int argc, char** argv){
     fread(data,sizeof(float), count*1024, f);
     fclose(f);
     std::cout<<"File read done"<<std::endl;
+    for(int i =0 ;i< 10;i++){
+        for(int j=0 ;j<1024;j++){
+            std::cout<<data[i*1024+j]<<" ";
+        }
+        std::cout<<std::endl;
+    }
 
     // query input
     feature_index::FeatureIndex input_index;
-    input_index.InitGpu("GPU", 2);
+    input_index.InitGpu("GPU", 1);
     std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
     std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
     float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
@@ -47,7 +53,7 @@ int main(int argc, char** argv){
     faiss::gpu::StandardGpuResources resources;
 
     faiss::gpu::GpuIndexIVFPQ index (
-            &resources, 2, d,
+            &resources, 1, d,
             ncentroids, 32, 8, true,
             faiss::gpu::INDICES_64_BIT,
             false,
@@ -56,13 +62,13 @@ int main(int argc, char** argv){
     index.train(count, data);
     index.add (count, data);
 
-//    { // I/O demo
-//        const char *outfilename = "/home/slh/faiss_index/index_store/index_search.faissindex";
-//        faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
-//        write_index (cpu_index, outfilename);
-//        printf ("done save \n");
-//        delete cpu_index;
-//    }
+    { // I/O demo
+        const char *outfilename = "/home/slh/faiss_index/index_store/index_car.faissindex";
+        faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
+        write_index (cpu_index, outfilename);
+        printf ("done save \n");
+        delete cpu_index;
+    }
 
 
     {

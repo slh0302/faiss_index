@@ -231,7 +231,7 @@ namespace feature_index{
         std::string extract_feature_blob_names(BLOB_NAME);
 
         /////modify by su
-        std::cout<<_net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
+        std::cout<<"batch size: "<< _net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
         int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
         // init memory
         float* feature_dbs = new float[count * TOTALBYTESIZE ];

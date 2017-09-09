@@ -15,8 +15,8 @@ double elapsed ()
     return  tv.tv_sec + tv.tv_usec * 1e-6;
 }
 
-std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
-std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
+std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
+std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
 
 // load from index file, and search
 int main(int argc, char** argv){
@@ -50,7 +50,7 @@ int main(int argc, char** argv){
     }
     out.close();
     feature_index::FeatureIndex fea_index;
-    float * xq = fea_index.PictureFeatureExtraction(argc - 2 ,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
+    float * xq = fea_index.PictureFeatureExtraction(argc - 2 ,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
 
     // para k-NN
     int k = 10;
