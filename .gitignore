@@ -4,4 +4,3 @@ cmake-build-debug/
 lib/
 model/*
 index_store/
-build/
