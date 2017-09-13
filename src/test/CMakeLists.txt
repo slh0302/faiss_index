@@ -16,9 +16,7 @@ target_link_libraries(
         libopencv_core.so
         libopencv_imgcodecs.so
         libopencv_imgproc.so
-        libmkl_intel_ilp64.so
-        libmkl_core.so
-        libmkl_gnu_thread.so
+        libopenblas.so.0
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
         libglog.so
 )
@@ -33,9 +31,7 @@ target_link_libraries(
         libopencv_core.so
         libopencv_imgcodecs.so
         libopencv_imgproc.so
-        libmkl_intel_ilp64.so
-        libmkl_core.so
-        libmkl_gnu_thread.so
+        libopenblas.so.0
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
         libglog.so
 )

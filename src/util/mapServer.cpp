@@ -71,7 +71,7 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
 #define DATA_BINARY 371
 #define FEATURE_GPU 7
 #define FAISS_GPU 10
-#define FAISS_PERSON_GPU 10
+#define FAISS_PERSON_GPU 11
 
 struct Info_String
 {
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     std::cout<<"Faiss Init Done"<<std::endl;
 
     // Init person Faiss GPU Index
-    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_map_nodata.faissindex";
+    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_map_32bit.faissindex";
     faiss::gpu::StandardGpuResources resources_person;
     faiss::Index* cpu_index_person = faiss::read_index(personFileName.c_str(), false);
     faiss::gpu::GpuIndexIVFPQ* index_person = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
