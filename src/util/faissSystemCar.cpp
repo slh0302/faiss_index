@@ -74,7 +74,7 @@ int main(int argc, char** argv){
     }
     out.close();
     feature_index::FeatureIndex fea_index;
-    fea_index.InitGpu("GPU", 12);
+    fea_index.InitGpu("GPU", 4);
     float * xq = fea_index.PictureFeatureExtraction(argc - 4 ,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
 
     // para k-NN
@@ -110,7 +110,6 @@ int main(int argc, char** argv){
             int height = atoi(file_name_list[4].c_str());
             //std::cout<<x<<y<<width<<height<<std::endl;
             rectangle(im,cvPoint(x,y),cvPoint(x+width, y+height),cv::Scalar(0,0,255),3,1,0);
-
             //out im
             IplImage qImg;
             qImg = IplImage(im); // cv::Mat -> IplImage

@@ -15,8 +15,11 @@
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/index_io.h>
 #include "boost/algorithm/string.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
-#define DATA_COUNT 169737
+#define DATA_COUNT 43455
 double elapsed ()
 {
     struct timeval tv;
@@ -29,9 +32,9 @@ struct Info_String
     char info[100];
 };
 
-std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
-std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
-
+std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
+std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
+std::string space[50];
 // load from index file, and search
 int main(int argc, char** argv){
     google::InitGoogleLogging(argv[0]);
@@ -44,7 +47,8 @@ int main(int argc, char** argv){
     int Limit = atoi(argv[3]);
     // file read
     Info_String* info = new Info_String[DATA_COUNT];
-    FILE* fin = fopen("/home/slh/data_person_169737_info","rb");
+    // TODO; CHANGE INFO
+    FILE* fin = fopen("/home/slh/data/data_car_color_43455_info","rb");
     fread(info, sizeof(Info_String),DATA_COUNT,fin);
     fclose(fin);
     // read index
@@ -71,8 +75,8 @@ int main(int argc, char** argv){
     }
     out.close();
     feature_index::FeatureIndex fea_index;
-    fea_index.InitGpu("GPU", 14);
-    float * xq = fea_index.PictureFeatureExtraction(argc - 4 ,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
+    fea_index.InitGpu("GPU", 12);
+    float * xq = fea_index.PictureFeatureExtraction(argc - 4 ,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
 
     // para k-NN
     int k = 20;
@@ -88,27 +92,25 @@ int main(int argc, char** argv){
     //printf("time: %.3f \n", t1-t0);
 
     // output the result
-    std::ofstream reout("/home/slh/pro/run/runResult/result.txt",std::ios::out);
-    // TODO: modify picture info
+    std::ofstream reout("/home/slh/pro/run/runResult/map.txt",std::ios::out);
     std::vector<std::string> file_name_list;
-    std::string root_dir = "/media/vehicle_res/person/out/";
+    std::string root_dir = "/media/vehicle_org/wengdeng/1/";
     reout<<t1 - t0<<std::endl;
     for (int i = 0; i < nq; i++) {
         for (int j = 0; j < k; j++) {
             std::string temp = info[nns[j + i * k]].info;
-            // TODO: show origin picture
-
+            //std::cout<<temp<<std::endl;
             if(temp.length() < 5){
                 continue;
             }
-
             boost::split(file_name_list, temp, boost::is_any_of(" ,!"), boost::token_compress_on);
             cv::Mat im = cv::imread(root_dir + file_name_list[0]);
-            int y = atoi(file_name_list[1].c_str());
-            int x = atoi(file_name_list[2].c_str());
+            int x = atoi(file_name_list[1].c_str());
+            int y = atoi(file_name_list[2].c_str());
             int width = atoi(file_name_list[3].c_str());
             int height = atoi(file_name_list[4].c_str());
-            //std::cout<<file_name_list[0]<<" "<<x<<" "<<y<<" "<<width<<" "<<height<<std::endl;
+            int numSpace = atoi(file_name_list[5].c_str());
+            //std::cout<<x<<y<<width<<height<<std::endl;
             rectangle(im,cvPoint(x,y),cvPoint(x+width, y+height),cv::Scalar(0,0,255),3,1,0);
             //out im
             IplImage qImg;
@@ -121,12 +123,16 @@ int main(int argc, char** argv){
             sprintf(stemp,"/home/slh/pro/run/originResult/%s_%d.jpg",str_name.c_str(),j);
             cvSaveImage(stemp,&qImg);
             reout << stemp <<std::endl;
-
-            //reout << temp <<std::endl;
         }
     }
     reout.close();
     printf("Done");
     return 0;
 
+}
+
+void LoadSpace(){
+    std::ifstream in("/home/slh/data/wd_space.txt", std::ios::in);
+    int num;
+    std::string temp;
 }

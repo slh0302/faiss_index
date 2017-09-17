@@ -26,13 +26,29 @@ int main(int argc, char** argv) {
     }
     int count = atoi(argv[2]);
     float* data = new float[count*1024];
-    FILE* f = fopen (argv[1],"rb");
-    if(f == NULL){
-        std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
-        return 0;
+    std::string filename = argv[1];
+
+    char s ='0';
+    for(int j=0; j<3;j++){
+        char temp = s+j;
+        std::string file_last = filename + "_" + temp;
+        std::cout<<file_last<<std::endl;
+        FILE* f = fopen (file_last.c_str(),"rb");
+        if(f == NULL){
+            std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+            return 0;
+        }
+        fread(&data[j*2000000], sizeof(float), 2000000*1024, f);
+        fclose(f);
+        std::cout<<"file done "<<file_last<<std::endl;
     }
-    fread(data,sizeof(float), count*1024, f);
-    fclose(f);
+//    FILE* f = fopen (argv[1],"rb");
+//    if(f == NULL){
+//        std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+//        return 0;
+//    }
+//    fread(data,sizeof(float), count*1024, f);
+//    fclose(f);
     std::cout<<"File read done"<<std::endl;
 
     // file read info
@@ -96,13 +112,13 @@ int main(int argc, char** argv) {
     assert(index.is_trained);
 
 
-//    { // I/O demo
-//        const char *outfilename = "/home/slh/faiss_index/index_store/index_IVFPQ_NOTADD.faissindex";
-//        printf ("[%.3f s] storing the pre-trained index to %s\n",
-//                elapsed() - ttrain, outfilename);
-//
-//        write_index (&index, outfilename);
-//    }
+    { // I/O demo
+        const char *outfilename = "/home/slh/faiss_index/index_store/index_IVFPQ_10000000.faissindex";
+        printf ("[%.3f s] storing the pre-trained index to %s\n",
+                elapsed() - ttrain, outfilename);
+
+        write_index (&index, outfilename);
+    }
 
 
     //for(int i=0;i<9;i++){

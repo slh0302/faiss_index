@@ -20,6 +20,8 @@ int main(int argc, char** argv){
     }
     int count = atoi(argv[2]);
     float* data = new float[count*1024];
+ //   std::string filename = argv[1];
+    // file read data
     FILE* f = fopen (argv[1],"rb");
     if(f == NULL){
         std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
@@ -27,6 +29,21 @@ int main(int argc, char** argv){
     }
     fread(data,sizeof(float), count*1024, f);
     fclose(f);
+//    char s ='0';
+//    for(int j=0; j<3;j++){
+//        char temp = s+j;
+//        std::string file_last = filename + "_" + temp;
+//        std::cout<<file_last<<std::endl;
+//        FILE* f = fopen (file_last.c_str(),"rb");
+//        if(f == NULL){
+//            std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+//            return 0;
+//        }
+//        fread(&data[j*2000000], sizeof(float), 2000000*1024, f);
+//        fclose(f);
+//        std::cout<<"file done "<<file_last<<std::endl;
+//    }
+
     std::cout<<"File read done"<<std::endl;
     for(int i =0 ;i< 10;i++){
         for(int j=0 ;j<1024;j++){
@@ -38,9 +55,9 @@ int main(int argc, char** argv){
     // query input
     feature_index::FeatureIndex input_index;
     input_index.InitGpu("GPU", 1);
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
-    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
+    std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
+    std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
+    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
     std::cout<<"done extract"<<std::endl;
     for(int i =0 ;i< 10;i++){
         for(int j=0 ;j<1024;j++){
@@ -49,28 +66,28 @@ int main(int argc, char** argv){
         std::cout<<std::endl;
     }
     int d = 1024;
-    int ncentroids = int(4 * sqrt(count));
+    int ncentroids = int(2 * sqrt(count));
     faiss::gpu::StandardGpuResources resources;
 
     faiss::gpu::GpuIndexIVFPQ index (
-            &resources, 1, d,
+            &resources, 9, d,
             ncentroids, 32, 8, true,
             faiss::gpu::INDICES_64_BIT,
             false,
             faiss::METRIC_L2);
     index.verbose = true;
-    index.train(count, data);
+    index.train(count/3, data);
+    std::cout<<"done"<<std::endl;
     index.add (count, data);
 
     { // I/O demo
-        const char *outfilename = "/home/slh/faiss_index/index_store/index_car.faissindex";
+        const char *outfilename = "/home/slh/faiss_index/index_store/index_person_new.faissindex";
         faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
         write_index (cpu_index, outfilename);
         printf ("done save \n");
         delete cpu_index;
     }
-
-
+    //faiss::gpu::
     {
         int k = 10;
         int nq = 10;

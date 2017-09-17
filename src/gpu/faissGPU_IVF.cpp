@@ -80,7 +80,7 @@ int main(int argc, char** argv){
     //            IndicesOptions indicesOptions,
     //            faiss::MetricType metric);
     //    faiss::gpu::GpuIndexFlat quantizer(&resources,d, faiss::METRIC_L2);
-    faiss::gpu::GpuIndexIVFFlat index (&resources, 2,false,false,d,ncentroids,
+    faiss::gpu::GpuIndexIVFFlat index (&resources, 1,false,false,d,ncentroids,
                                        faiss::gpu::INDICES_64_BIT, faiss::METRIC_L2);
 
     index.verbose = true;
@@ -93,7 +93,7 @@ int main(int argc, char** argv){
 
 
 //    { // I/O demo
-//        const char *outfilename = "/home/slh/faiss_index/index_store/index_GPU_IVF.faissindex";
+//        const char *outfilename = "/home/slh/faiss_index/index_store/index_car_IVF.faissindex";
 //        faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
 //        write_index (cpu_index, outfilename);
 //        printf ("done save \n");
