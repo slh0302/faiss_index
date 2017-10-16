@@ -28,27 +28,27 @@ int main(int argc, char** argv) {
     float* data = new float[count*1024];
     std::string filename = argv[1];
 
-    char s ='0';
-    for(int j=0; j<3;j++){
-        char temp = s+j;
-        std::string file_last = filename + "_" + temp;
-        std::cout<<file_last<<std::endl;
-        FILE* f = fopen (file_last.c_str(),"rb");
-        if(f == NULL){
-            std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
-            return 0;
-        }
-        fread(&data[j*2000000], sizeof(float), 2000000*1024, f);
-        fclose(f);
-        std::cout<<"file done "<<file_last<<std::endl;
-    }
-//    FILE* f = fopen (argv[1],"rb");
-//    if(f == NULL){
-//        std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
-//        return 0;
+//    char s ='0';
+//    for(int j=0; j<3;j++){
+//        char temp = s+j;
+//        std::string file_last = filename + "_" + temp;
+//        std::cout<<file_last<<std::endl;
+//        FILE* f = fopen (file_last.c_str(),"rb");
+//        if(f == NULL){
+//            std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+//            return 0;
+//        }
+//        fread(&data[j*2000000], sizeof(float), 2000000*1024, f);
+//        fclose(f);
+//        std::cout<<"file done "<<file_last<<std::endl;
 //    }
-//    fread(data,sizeof(float), count*1024, f);
-//    fclose(f);
+    FILE* f = fopen (filename.c_str(),"rb");
+    if(f == NULL){
+        std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+        return 0;
+    }
+    fread(data,sizeof(float), count*1024, f);
+    fclose(f);
     std::cout<<"File read done"<<std::endl;
 
     // file read info
@@ -62,21 +62,21 @@ int main(int argc, char** argv) {
     // query input
     feature_index::FeatureIndex input_index;
     input_index.InitGpu("GPU", 1);
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
-    float * xq = input_index.PictureFeatureExtraction(queryNum, proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
+    std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
+    std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
+    float * xq = input_index.PictureFeatureExtraction(queryNum, proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
     std::cout<<"done extract"<<std::endl;
 
     // query info input
-    int* query = new int[queryNum];
-    std::ifstream inquery("/home/slh/faiss_index/model/queryinfo",std::ios::in);
-    for(int i=0; i<queryNum ;i++){
-        inquery>>query[i];
-    }
-    inquery.close();
+//    int* query = new int[queryNum];
+//    std::ifstream inquery("/home/slh/faiss_index/model/queryinfo",std::ios::in);
+//    for(int i=0; i<queryNum ;i++){
+//        inquery>>query[i];
+//    }
+//    inquery.close();
 
     // Init label list
-    input_index.InitLabelList("/home/slh/faiss_index/model/labellist.txt");
+   // input_index.InitLabelList("/home/slh/faiss_index/model/labellist.txt");
     // There are two parameters to the search method:
     // nlist, the number of cells, and
     // nprobe, the number of cells (out of nlist)
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
     // (d must be a multiple of m).
     // when d = 64, m = 8 and float, Here we compress 64 32-bit floats to 8 bytes, 2048 bit ==> 64 bit
     // so the compression factor is 32.
-    int m = 64;                        // in this place, d = 1024
+    int m = 32;                        // in this place, d = 1024
                                        // compression factor is 16
     // definition
     // size_t d; equal to int d = 1024 ///< size of the input vectors
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 
 
     { // I/O demo
-        const char *outfilename = "/home/slh/faiss_index/index_store/index_IVFPQ_10000000.faissindex";
+        const char *outfilename = "/home/slh/faiss_index/index_store/index_CPU_personMap.faissindex";
         printf ("[%.3f s] storing the pre-trained index to %s\n",
                 elapsed() - ttrain, outfilename);
 
@@ -172,12 +172,12 @@ int main(int argc, char** argv) {
 
 
         // evaluate
-        double total_res = 0;
-        for(int i = 0; i< nq; i++){
-            double res = input_index.Evaluate(k, query[i], info, &I[i * k]);
-            total_res += res;
-        }
-        printf("mAP:  %7lf\n", total_res/nq);
+//        double total_res = 0;
+//        for(int i = 0; i< nq; i++){
+//            double res = input_index.Evaluate(k, query[i], info, &I[i * k]);
+//            total_res += res;
+//        }
+       // printf("mAP:  %7lf\n", total_res/nq);
 
         printf("time: %lf \n", t3-t2);
         printf("I=\n");

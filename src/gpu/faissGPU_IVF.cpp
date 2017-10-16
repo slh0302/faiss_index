@@ -80,8 +80,12 @@ int main(int argc, char** argv){
     //            IndicesOptions indicesOptions,
     //            faiss::MetricType metric);
     //    faiss::gpu::GpuIndexFlat quantizer(&resources,d, faiss::METRIC_L2);
-    faiss::gpu::GpuIndexIVFFlat index (&resources, 1,false,false,d,ncentroids,
-                                       faiss::gpu::INDICES_64_BIT, faiss::METRIC_L2);
+
+    faiss::gpu::GpuIndexIVFFlatConfig config;
+    config.device = 9;
+
+    faiss::gpu::GpuIndexIVFFlat index (&resources,d,ncentroids,
+                                        faiss::METRIC_L2, config);
 
     index.verbose = true;
     //resources.setTempMemory(512 * 1024 * 1024);

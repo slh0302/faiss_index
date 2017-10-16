@@ -32,8 +32,8 @@ add_executable(faissGPU_IVF ${SOURCE_GPU_IVF})
 set(SOURCE_GPU_IO_IVF faissGpuIO_IVF.cpp)
 add_executable(faissGPU_IO_IVF ${SOURCE_GPU_IO_IVF})
 
-set(SOURCE_MUTI_GPUS MutiGputIndex.cpp)
-add_executable(MutiGputIndex ${SOURCE_MUTI_GPUS})
+#set(SOURCE_MUTI_GPUS MutiGputIndex.cpp)
+#add_executable(MutiGputIndex ${SOURCE_MUTI_GPUS})
 
 target_link_libraries(
         faissGpuPQ
@@ -46,9 +46,7 @@ target_link_libraries(
         libopencv_core.so
         libopencv_imgcodecs.so
         libopencv_imgproc.so
-        libmkl_intel_ilp64.so
-        libmkl_core.so
-        libmkl_gnu_thread.so
+        libopenblas.so.0
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
         libglog.so
         libcudart.so
@@ -66,9 +64,7 @@ target_link_libraries(
         libopencv_core.so
         libopencv_imgcodecs.so
         libopencv_imgproc.so
-        libmkl_intel_ilp64.so
-        libmkl_core.so
-        libmkl_gnu_thread.so
+        libopenblas.so.0
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
         libglog.so
         libcudart.so
@@ -86,9 +82,7 @@ target_link_libraries(
         libopencv_core.so
         libopencv_imgcodecs.so
         libopencv_imgproc.so
-        libmkl_intel_ilp64.so
-        libmkl_core.so
-        libmkl_gnu_thread.so
+        libopenblas.so.0
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
         libglog.so
         libcudart.so
@@ -106,31 +100,27 @@ target_link_libraries(
         libopencv_core.so
         libopencv_imgcodecs.so
         libopencv_imgproc.so
-        libmkl_intel_ilp64.so
-        libmkl_core.so
-        libmkl_gnu_thread.so
+        libopenblas.so.0
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
         libglog.so
         libcudart.so
         libcublas.so
 )
 
-target_link_libraries(
-        MutiGputIndex
-        gpufaiss
-        faiss
-        libfeature.so
-        libssd.so
-        libboost_system.so
-        libboost_filesystem.so
-        libopencv_core.so
-        libopencv_imgcodecs.so
-        libopencv_imgproc.so
-        libmkl_intel_ilp64.so
-        libmkl_core.so
-        libmkl_gnu_thread.so
-        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
-        libglog.so
-        libcudart.so
-        libcublas.so
-)
+#target_link_libraries(
+#        MutiGputIndex
+#        gpufaiss
+#        faiss
+#        libfeature.so
+#        libssd.so
+#        libboost_system.so
+#        libboost_filesystem.so
+#        libopencv_core.so
+#        libopencv_imgcodecs.so
+#        libopencv_imgproc.so
+#        libopenblas.so.0
+#        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
+#        libglog.so
+#        libcudart.so
+#        libcublas.so
+#)

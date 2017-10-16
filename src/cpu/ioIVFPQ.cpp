@@ -25,6 +25,7 @@ int main(int argc, char** argv){
     }
     char* FileName = argv[1];
     // read index
+
     faiss::IndexIVFPQ* index = dynamic_cast<faiss::IndexIVFPQ*>(faiss::read_index(FileName, false));
 
     std::cout<<"read done"<<std::endl;

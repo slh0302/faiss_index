@@ -68,10 +68,11 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
 // info string
 #define DATA_COUNT 43455
 #define DATA_COUNT_PERSON 8046
+#define DATA_PERSON_TRAIN 169737
 #define DATA_BINARY 371
 #define FEATURE_GPU 7
 #define FAISS_GPU 10
-#define FAISS_PERSON_GPU 10
+#define FAISS_PERSON_GPU 11
 
 struct Info_String
 {
@@ -109,27 +110,76 @@ int main(int argc, char *argv[])
     feature_index::FeatureIndex fea_index;
     feature_index::FeatureIndex fea_index_person;
 
-    // Init vehicle Faiss GPU Index
-    std::string FileName = "/home/slh/faiss_index/index_store/index_car.faissindex";
+
+    // Load vehicle data
+    float* data = new float[DATA_COUNT*1024];
+    FILE* f = fopen ("/home/slh/data/data_car_color_43455","rb");
+    if(f == NULL){
+        std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+        return 0;
+    }
+    fread(data,sizeof(float), DATA_COUNT*1024, f);
+    fclose(f);
+    std::cout<<"Vehicle Load Done"<<std::endl;
+
+    // Load person data
+    float* pdata = new float[DATA_PERSON_TRAIN*1024];
+    f = fopen ("/home/slh/data_person_map_169737","rb");
+    if(f == NULL){
+        std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
+        return 0;
+    }
+    fread(pdata,sizeof(float), DATA_PERSON_TRAIN*1024, f);
+    fclose(f);
+    std::cout<<"Person Load Done"<<std::endl;
+
+// Init vehicle Faiss GPU Index
+//    std::string FileName = "/home/slh/faiss_index/index_store/index_car.faissindex";
+//    faiss::gpu::StandardGpuResources resources;
+//    faiss::Index* cpu_index = faiss::read_index(FileName.c_str(), false);
+//    faiss::gpu::GpuIndexIVFPQ* index = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
+//            faiss::gpu::index_cpu_to_gpu(&resources,FAISS_GPU,cpu_index));
+    int dimen = 1024;
+    // 4*sqrt(count)
+    int ncentroids = int(4 * sqrt(DATA_COUNT));
+
     faiss::gpu::StandardGpuResources resources;
-    faiss::Index* cpu_index = faiss::read_index(FileName.c_str(), false);
-    faiss::gpu::GpuIndexIVFPQ* index = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
-            faiss::gpu::index_cpu_to_gpu(&resources,FAISS_GPU,cpu_index));
+    faiss::gpu::GpuIndexIVFPQConfig config;
+    config.device = FAISS_GPU;
+
+    faiss::gpu::GpuIndexIVFPQ* index = new faiss::gpu::GpuIndexIVFPQ(
+            &resources, dimen,
+            ncentroids, 32, 8,
+            faiss::METRIC_L2,config);
+    index->verbose = true;
+    index->train(DATA_COUNT, data);
+    index->add(DATA_COUNT, data);
     std::cout<<"Faiss Init Done"<<std::endl;
 
-    // Init person Faiss GPU Index
-    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_map_nodata.faissindex";
-    faiss::gpu::StandardGpuResources resources_person;
-    faiss::Index* cpu_index_person = faiss::read_index(personFileName.c_str(), false);
-    faiss::gpu::GpuIndexIVFPQ* index_person = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
-            faiss::gpu::index_cpu_to_gpu(&resources_person,FAISS_PERSON_GPU,cpu_index_person));
+
+// Init person Faiss GPU Index
+//    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_map_nodata.faissindex";
+//    faiss::gpu::StandardGpuResources resources_person;
+//    faiss::Index* cpu_index_person = faiss::read_index(personFileName.c_str(), false);
+//    faiss::gpu::GpuIndexIVFPQ* index_person = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
+//            faiss::gpu::index_cpu_to_gpu(&resources_person,FAISS_PERSON_GPU,cpu_index_person));
+    faiss::gpu::StandardGpuResources res;
+    faiss::gpu::GpuIndexIVFPQConfig pconfig;
+    pconfig.device = FAISS_PERSON_GPU;
+
+    faiss::gpu::GpuIndexIVFPQ* index_person = new faiss::gpu::GpuIndexIVFPQ (
+            &res, dimen,
+            ncentroids, 32, 8,
+            faiss::METRIC_L2,pconfig);
+    index_person->verbose = true;
+    index_person->train(DATA_PERSON_TRAIN, pdata);
     std::cout<<"Person Faiss Init Done"<<std::endl;
 
     // read data
     float* dataPerson = new float[DATA_COUNT_PERSON*1024];
     //   std::string filename = argv[1];
     // file read data
-    FILE* f = fopen ("/home/slh/data_person_map_8046","rb");
+    f = fopen ("/home/slh/data_person_map_8046","rb");
     if(f == NULL){
         std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
         return 0;
@@ -355,12 +405,15 @@ void ClientVehicleThread(int client_sockfd, char* remote_addr,
                 IplImage qImg;
                 qImg = IplImage(im); // cv::Mat -> IplImage
                 char stemp[200];
+                char stemp1[200];
                 int index_slash = file_name.find_last_of('/');
                 int index_dot = file_name.find_last_of('.');
                 file_name = file_name.substr(index_slash+1,index_dot- index_slash-1);
                 sprintf(stemp,"/home/slh/pro/run/originResult/%s_%d.jpg",file_name.c_str(),j);
+
+                sprintf(stemp1,"/run/originResult/%s_%d.jpg",file_name.c_str(),j);
                 cvSaveImage(stemp,&qImg);
-                result_path = result_path + stemp + ",";
+                result_path = result_path + stemp1 + ",";
             }
         }
 
@@ -472,12 +525,15 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
                 IplImage qImg;
                 qImg = IplImage(im); // cv::Mat -> IplImage
                 char stemp[200];
+                char stemp1[200];
                 int index_slash = file_name.find_last_of('/');
                 int index_dot = file_name.find_last_of('.');
                 file_name = file_name.substr(index_slash+1,index_dot- index_slash-1);
                 sprintf(stemp,"/home/slh/pro/run/originResult/%s_%d.jpg",file_name.c_str(),j);
+                sprintf(stemp1,"/run/originResult/%s_%d.jpg",file_name.c_str(),j);
+
                 cvSaveImage(stemp,&qImg);
-                locationStrPerson[j] = stemp;
+                locationStrPerson[j] = stemp1;
             }
         }
 
@@ -608,15 +664,15 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
             IplImage qImg;
             qImg = IplImage(im); // cv::Mat -> IplImage
             char stemp[200];
+            char stemp1[200];
             int index_slash = file_name.find_last_of('/');
             int index_dot = file_name.find_last_of('.');
             file_name = file_name.substr(index_slash+1,index_dot- index_slash-1);
             sprintf(stemp,"/home/slh/pro/run/originResult/%s_%d.jpg",file_name.c_str(),j);
+            sprintf(stemp1,"/run/originResult/%s_%d.jpg",file_name.c_str(),j);
             cvSaveImage(stemp,&qImg);
-            locationStrVehicle[j] = stemp;
+            locationStrVehicle[j] = stemp1;
         }
-
-
         std::ofstream reout("/home/slh/pro/run/runResult/map.txt",std::ios::out);
         std::map<int, int*>::iterator it;
         reout<<(t1 - t0)<<std::endl;
