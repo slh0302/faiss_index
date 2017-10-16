@@ -48,7 +48,7 @@ namespace retrieval{
         FeatureIndex(int dimension, int nlist, int groups, int nbits);
 
         /// Train FeatureIndex
-        void TrainIndex(int count, float* data);
+        void TrainIndex();
         bool isTrainIndex(){ return _index->is_trained; }
 
         /// Modify FeatureIndex Param

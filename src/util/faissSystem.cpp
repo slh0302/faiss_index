@@ -40,7 +40,7 @@ int main(int argc, char** argv){
         return 0;
     }
     char* FileName = argv[1];
-    int GpuNum = atoi(argv[2]);
+    int GpuNum = 0;
     int Limit = atoi(argv[3]);
     // file read
     Info_String* info = new Info_String[DATA_COUNT];
@@ -71,7 +71,7 @@ int main(int argc, char** argv){
     }
     out.close();
     feature_index::FeatureIndex fea_index;
-    fea_index.InitGpu("GPU", 14);
+    fea_index.InitGpu("GPU", 15);
     float * xq = fea_index.PictureFeatureExtraction(argc - 4 ,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
 
     // para k-NN

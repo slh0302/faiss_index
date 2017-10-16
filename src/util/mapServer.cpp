@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "binary.h"
+
 // Model File
 std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel_memory.prototxt";
 std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
@@ -156,6 +157,7 @@ int main(int argc, char *argv[])
     index->add(DATA_COUNT, data);
     std::cout<<"Faiss Init Done"<<std::endl;
 
+//<<<<<<< HEAD
 
 // Init person Faiss GPU Index
 //    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_map_nodata.faissindex";
@@ -173,6 +175,16 @@ int main(int argc, char *argv[])
             faiss::METRIC_L2,pconfig);
     index_person->verbose = true;
     index_person->train(DATA_PERSON_TRAIN, pdata);
+
+//=======
+//    // Init person Faiss GPU Index
+//    std::string personFileName = "/home/slh/faiss_index/index_store/index_person_map_32bit.faissindex";
+//    faiss::gpu::StandardGpuResources resources_person;
+//    faiss::Index* cpu_index_person = faiss::read_index(personFileName.c_str(), false);
+//    faiss::gpu::GpuIndexIVFPQ* index_person = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
+//            faiss::gpu::index_cpu_to_gpu(&resources_person,FAISS_PERSON_GPU,cpu_index_person));
+//>>>>>>> 1bccb6978a375a21e5e1bcf5aed1f0082f932d79
+
     std::cout<<"Person Faiss Init Done"<<std::endl;
 
     // read data
@@ -310,8 +322,7 @@ int main(int argc, char *argv[])
                 break;
         }
         // thread
-
-        //threads.join();
+        // threads.join();
     }
     close(server_sockfd);
     return 0;

@@ -20,7 +20,7 @@ int main(int argc, char** argv){
         std::cout<<"argc : "<<argc<<" is not enough"<<std::endl;
         return 0;
     }
-    int count = atoi(argv[2]);
+    int count = 0;
     float* data = new float[count*1024];
  //   std::string filename = argv[1];
     // file read data
@@ -75,12 +75,13 @@ int main(int argc, char** argv){
     faiss::gpu::GpuIndexIVFPQConfig config;
     config.device = 9;
 
+
     faiss::gpu::GpuIndexIVFPQ index (
             &resources, d,
             ncentroids, 32, 8,
             faiss::METRIC_L2,config);
     index.verbose = true;
-    index.train(count/2, data);
+    index.train(count, data);
     std::cout<<"done"<<std::endl;
 
     index.add (count, data);
@@ -92,7 +93,7 @@ int main(int argc, char** argv){
         printf ("done save \n");
         delete cpu_index;
     }
-
+    
     //faiss::gpu::
     {
         int k = 10;
