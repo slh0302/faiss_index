@@ -5,18 +5,26 @@
 #include <Retrieval.h>
 #include <fstream>
 #include <faiss/index_io.h>
+#include <faiss/AuxIndexStructures.h>
 
-//    void WriteIndexToFile(char* saveFileName);
-//    void ReadIndexFromFile(char* saveFileName);
-//
-//    /// Add/Delete FeatureIndex/FeatureIndex List
-//    void AddItemToFeature(float data);
-//    void DeleteItemFromFeature(int id);
-//    void AddItemList(int numOfdata, float* data);
-//    void DeleteItemList(int beginId, int numOfdata);
-//
-//    /// Retrieval FeatureIndex
-//    void RetievalIndex(int numOfquery, float* nquery, int Ktop, long* index, float* Distance);
+retrieval::FeatureIndex::FeatureIndex(int dimension, int nlist,
+                                      int groups, int nbits):
+    _dimension(dimension), _nlist(nlist), _groups(groups), _nbits(nbits)
+
+{
+    _quantizer = new faiss::IndexFlatL2(dimension);
+
+    _index = new faiss::IndexIVFPQ(_quantizer, dimension, nlist, groups, nbits);
+}
+
+long retrieval::FeatureIndex::getTotalIndex() {
+    if(_index != NULL) {
+        return _index->ntotal;
+    }else{
+        return 0;
+    }
+}
+
 void retrieval::FeatureIndex::WriteIndexToFile(char* saveFileName){
 
     if(  _index == NULL || (!_index->is_trained) ){
@@ -41,13 +49,56 @@ void retrieval::FeatureIndex::ReadIndexFromFile(char* fileName){
     }
 
     _index = dynamic_cast<faiss::IndexIVFPQ*>(faiss::read_index(fileName, false));
-    _nprobe = _index->_nprobe;
 
-   //TODO: Variable change
+    /// init variable
+    _nprobe = _index->_nprobe;
+    _groups = _index->pq.M;
+    _nbits = _index->pq.nbits;
+    _nlist = _index->codes.size();
+    _size = _index->ntotal;
+}
+
+void retrieval::FeatureIndex::AddItemToFeature(float* data){
+
+    this->_index->add(1, data);
+
+    _size = _index->ntotal;
 
 }
 
-void retrieval::FeatureIndex::AddItemToFeature(float data){
+void retrieval::FeatureIndex::DeleteItemFromFeature(int id) {
 
+    // ID selector construct
+    faiss::IDSelector* ids = new faiss::IDSelectorRange(id, id+1);
+
+    this->_index->remove_ids(ids);
+
+    _size = _index->ntotal;
+
+}
+
+void retrieval::FeatureIndex::AddItemList(int numOfdata, float *data) {
+
+    this->_index->add(numOfdata, data);
+
+    _size = _index->ntotal;
+
+}
+
+void retrieval::FeatureIndex::DeleteItemList(int beginId, int numOfdata) {
+
+    // ID selector construct
+    faiss::IDSelector* ids = new faiss::IDSelectorRange(beginId, beginId + numOfdata);
+
+    this->_index->remove_ids(ids);
+
+    _size = _index->ntotal;
+
+}
+
+void retrieval::FeatureIndex::RetievalIndex(int numOfquery, float* nquery,
+                                            int Ktop, long* index, float* Distance) {
+
+    _index->search(numOfquery, nquery, Ktop, Distance, index);
 
 }
