@@ -1,20 +1,36 @@
 //
+// Created by slh on 17-10-11.
+//
+
+//
 // Created by slh on 17-5-10.
 //
 
 #include <feature.h>
+#include "binary.h"
 #include "boost/algorithm/string.hpp"
+#include <faiss/gpu/StandardGpuResources.h>
+#include <faiss/gpu/GpuIndexIVFPQ.h>
+#include <faiss/gpu/GpuAutoTune.h>
+#include <faiss/index_io.h>
 #include <fstream>
 #include <vector>
-// extract feature
+
 using namespace std;
 using namespace feature_index;
 
+#define DATA_BINARY 371
+#define FAISS_GPU 10
+
+/// Search one file :
+///     1. extract feature
+///     2. search (binary search)
+///     3. Union
 
 int main(int argc,char** argv){
     google::InitGoogleLogging(argv[0]);
     FeatureIndex index = FeatureIndex();
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel_memory.prototxt";
+    std::string proto_file = "/home/slh/faiss_index/model/deploy_googlenet_multilabel_all.prototxt";
     std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
 
     if(argc <= 1 ){
@@ -23,55 +39,77 @@ int main(int argc,char** argv){
     }
 
     string file_list = argv[1];
-    ifstream infile(file_list.c_str(), ios::in);
-    int count = atoi(argv[2]);
-    string save_filename = argv[3];
+    int count = 1;
+    string index_filename = argv[2];
 
     Info_String* info = new Info_String[count];
-    string* s = new string[count];
-    std::vector< std::string > file_name_list;
     string temp;
-    std::string ROOT_DIR = "/media/vehicle_res/person/out/";
+    std::string ROOT_DIR = "/home/slh/retrieval/test_pic/";
+    std::string file_list_name ="/home/slh/caffe-ssd/detecter/examples/_temp/file_list";
+    std::ofstream output(file_list_name,std::ios::out);
     for(int k =0; k<count; k++){
-        getline(infile, temp);
-        boost::split(file_name_list, temp, boost::is_any_of(" ,!"), boost::token_compress_on);
-        s[k] = ROOT_DIR + file_name_list[0];
-        strcpy(info[k].info, (file_name_list[1]+" "+ file_name_list[2] +" "+
-                                  file_name_list[3] +" "+file_name_list[4]+" "+file_name_list[5] + " " + file_name_list[6]).c_str());
-
+        strcpy(info[k].info, (file_list).c_str());
+        output<<info[k].info<<std::endl;
     }
-    infile.close();
-
+    output.close();
 
     caffe::Net<float>* net = index.InitNet(proto_file, proto_weight);
 
-    float* data = new float[count]; // data
-    int remain = count / 200 ; // remain
-    std::vector<cv::Mat> pic_list;
-    std::vector<int> label;
-    index.InitGpu("GPU", 11);
-    for(int i=0; i< remain; i++){
-        for (int j=0;j<200;j++){
-            cv::Mat img = cv::imread(s[j+i*200]);
-            cv::Mat cv_img ;
-            cv::resize(img,cv_img, cv::Size(224,224));
-            pic_list.push_back(cv_img);
-            label.push_back(j);
-        }
-        index.MemoryPictureFeatureExtraction(count, &data[i*200], net, "pool5/7x7_s1", pic_list, label);
+    float* data ;
+    int* color_re = new int[count];
+    int* type_re = new int[count];
+
+    /// int count, caffe::Net<float> * _net, std::string blob_name
+    data = index.PictureAttrFeatureExtraction(count, net, "pool5/7x7_s1",
+                                              "color/classifier", "model_loss1/classifier",
+                                              color_re, type_re);
+    /// PictureFeatureExtraction(count, net, "pool5/7x7_s1");
+
+    /**
+    //    /// binary change
+    //    /// Init Binary Index
+    //    void * p = FeatureBinary::CreateIndex(0);
+    //
+    //    /// Load Binary Table
+    //    std::string table_filename="/home/slh/faiss_index/index_store/table.index";
+    //    if(!std::fstream(table_filename.c_str())) {
+    //        std::cout << "Table File Wrong" << std::endl;
+    //        return 1;
+    //    }
+    //    FeatureBinary::CreateTable(table_filename.c_str(), 16);
+    //
+    //    /// Load Binary Index
+    //
+    //    /// TODO:: Index File Name Change
+    //    std::string IndexFileName("/home/slh/data/demo/data_binary_map_371");
+    //    std::string IndexInfoName = IndexFileName + "_info";
+    //    FeatureBinary::LoadIndex(p, IndexFileName.c_str(), IndexInfoName.c_str(), DATA_BINARY);
+    //
+    **/
+
+    /// Init vehicle Faiss GPU Index
+    std::string FileName = "/home/slh/faiss_index/index_store/index_car.faissindex";
+    faiss::gpu::StandardGpuResources resources;
+    faiss::Index* cpu_index = faiss::read_index(FileName.c_str(), false);
+    faiss::gpu::GpuIndexIVFPQ* _index = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
+            faiss::gpu::index_cpu_to_gpu(&resources,FAISS_GPU,cpu_index));
+    std::cout<<"Faiss Init Done"<<std::endl;
+
+    /// result return
+    int nq = 1;
+    int k = 100;
+    std::vector<faiss::Index::idx_t> nns (k * nq);
+    std::vector<float>               dis (k * nq);
+    _index->setNumProbes(15);
+    _index->search(nq, data, k, dis.data(), nns.data());
+    //index_person->search(nq, data, k, dis.data(), nns.data());
+
+    /// SQL change
+    int* sql_result ;
+    for(int i=0; i<k; i++){
+
     }
 
-
-    FILE * floatWrite = fopen(save_filename.c_str(),"wb");
-    fwrite(data, sizeof(float), count * 1024, floatWrite);
-    fclose(floatWrite);
-
-    //Info_String* info_str = new Info_String[count];
-    FILE* infoWrite =fopen((save_filename+"_info").c_str(),"wb");
-    fwrite(info, sizeof(Info_String), count, infoWrite);
-    fclose(infoWrite);
-
     delete data;
-    delete s;
     return 0;
 }

@@ -21,7 +21,7 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
         /usr/local/include
         /usr/include
-        /shar/local/includecd
+        /share/local/included
         /usr/local/cuda/include
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/include
         ${PROJECT_SOURCE_DIR}/../
@@ -40,6 +40,7 @@ link_directories(
 )
 
 add_subdirectory(util)
+add_subdirectory(SQL)
 add_subdirectory(gpu)
 add_subdirectory(cpu)
 add_subdirectory(test)

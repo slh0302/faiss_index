@@ -94,6 +94,10 @@ int main(int argc, char** argv){
         delete cpu_index;
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1bccb6978a375a21e5e1bcf5aed1f0082f932d79
     //faiss::gpu::
     {
         int k = 10;

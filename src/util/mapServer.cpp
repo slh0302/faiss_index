@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "binary.h"
+
 // Model File
 std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel_memory.prototxt";
 std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
@@ -260,8 +261,7 @@ int main(int argc, char *argv[])
                 break;
         }
         // thread
-
-        //threads.join();
+        // threads.join();
     }
     close(server_sockfd);
     return 0;
