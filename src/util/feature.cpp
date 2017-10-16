@@ -530,6 +530,133 @@ namespace feature_index{
 
     /**
      *
+     * @param count
+     * @param _net
+     * @param feature_blob_name
+     * @param Attr_blob_name
+     * @return
+     */
+    float* FeatureIndex::PictureAttrFeatureExtraction(int count, caffe::Net<float> *_net, std::string feature_blob_name,
+                                                        std::string Attr_color_name, std::string Attr_type_name,
+                                                        int* color_re, int* type_re) {
+        const int color_type = 11;
+        const int car_type = 1232;
+
+        std::string extract_feature_blob_names(feature_blob_name);
+        /// modify by su
+        std::cout<<"batch size: "<< _net->blob_by_name(extract_feature_blob_names)->num()<<std::endl;
+        int num_mini_batches = count / _net->blob_by_name(extract_feature_blob_names)->num();
+        /// init memory
+        float* feature_dbs = new float[count * TOTALBYTESIZE ];
+
+        std::vector<caffe::Blob<float>*> input_vec;
+        Datum datum;
+        const boost::shared_ptr<Blob<float> > feature_blob =
+                _net->blob_by_name(extract_feature_blob_names);
+
+        const boost::shared_ptr<Blob<float> > attr_type_blob =
+                _net->blob_by_name(Attr_type_name);
+
+        const boost::shared_ptr<Blob<float> > attr_color_blob =
+                _net->blob_by_name(Attr_color_name);
+
+        int batch_size = feature_blob->num();
+        int dim_features = feature_blob->count() / batch_size;
+        for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index) {
+            /// std::cout<<"start"<<std::endl;
+            _net->Forward(input_vec);
+            const float* feature_blob_data;
+            const float* feature_color_data;
+            const float* feature_type_data;
+            for (int n = 0; n < batch_size; ++n) {
+
+                feature_color_data =
+                        attr_color_blob->cpu_data() + attr_color_blob->offset(n);
+
+                feature_type_data =
+                        attr_type_blob->cpu_data() + attr_type_blob->offset(n);
+
+                /// color
+                float max = -1;
+                int max_id = -1;
+                for(int k = 0; k< color_type; k++){
+                    if(feature_color_data[k] > max){
+                        max = feature_color_data[k];
+                        max_id = k;
+                    }
+                }
+                color_re[n + batch_index*batch_size] = max_id;
+
+                /// car
+                max = -1;
+                max_id = -1;
+                for(int k = 0; k< car_type; k++){
+                    if(feature_type_data[k] > max){
+                        max = feature_type_data[k];
+                        max_id = k;
+                    }
+                }
+                type_re[n + batch_index*batch_size] = max_id;
+
+                /// feature
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features ; ++d) {
+                    feature_dbs[d + (n + batch_index*batch_size)*dim_features] = feature_blob_data[d];
+                } // for (int d = 0; d < dim_features / 8; ++d)
+            }  // for (int n = 0; n < batch_size; ++n)
+        }  // for (int batch_index = 0; batch_index < num_mini_batches; ++batch_index)
+
+        /// write the remain batch
+        bool isRemain=false;
+        int remain = count - num_mini_batches*(_net->blob_by_name(extract_feature_blob_names)->num());
+        if(remain >0 ){
+            isRemain=true;
+            _net->Forward(input_vec);
+        }
+        if(isRemain){
+            const float* feature_blob_data;
+            const float* feature_color_data;
+            const float* feature_type_data;
+            for (int n = 0; n < remain; ++n) {//data new
+
+                feature_color_data =
+                        attr_color_blob->cpu_data() + attr_color_blob->offset(n);
+
+                feature_type_data =
+                        attr_type_blob->cpu_data() + attr_type_blob->offset(n);
+
+                /// color
+                float max = -1;
+                for(int k = 0; k< color_type; k++){
+                    if(feature_color_data[k] > max){
+                        max = feature_color_data[k];
+                    }
+                }
+                color_re[num_mini_batches*batch_size + n] = max;
+
+                /// car
+                max = -1;
+                for(int k = 0; k< car_type; k++){
+                    if(feature_type_data[k] > max){
+                        max = feature_type_data[k];
+                    }
+                }
+                type_re[num_mini_batches*batch_size + n] = max;
+
+                feature_blob_data = feature_blob->cpu_data() + feature_blob->offset(n);
+                for (int d = 0; d < dim_features; ++d) {
+                    feature_dbs[(num_mini_batches*batch_size+n)*dim_features +d] = feature_blob_data[d];
+                } // for (int d = 0; d < dim_features/8; ++d)
+            }  // for (int n = 0; n < remian; ++n)
+        }  // for (int i = 0; i < num_features; ++i)
+
+        std::cout<<"Successfully"<<std::endl;
+        return feature_dbs;
+    }
+
+
+    /**
+     *
      * @param data
      * @return
      *

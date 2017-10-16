@@ -20,7 +20,7 @@ int main(int argc, char** argv){
         std::cout<<"argc : "<<argc<<" is not enough"<<std::endl;
         return 0;
     }
-    int count = atoi(argv[2]);
+    int count = 0;
     float* data = new float[count*1024];
  //   std::string filename = argv[1];
     // file read data
@@ -71,7 +71,6 @@ int main(int argc, char** argv){
    // 4*sqrt(count)
     int ncentroids = int(4 * sqrt(count));
     faiss::gpu::StandardGpuResources resources;
-
     faiss::gpu::GpuIndexIVFPQ index (
             &resources, 9, d,
             ncentroids, 32, 8, true,
@@ -79,9 +78,10 @@ int main(int argc, char** argv){
             false,
             faiss::METRIC_L2);
     index.verbose = true;
-    index.train(count/2, data);
+    index.train(count, data);
     std::cout<<"done"<<std::endl;
 
+    index.add (count, data);
 
     { // I/O demo
         const char *outfilename = "/home/slh/faiss_index/index_store/index_person_map_nodata.faissindex";
@@ -91,7 +91,7 @@ int main(int argc, char** argv){
         delete cpu_index;
     }
 
-    index.add (count, data);
+
     //faiss::gpu::
     {
         int k = 10;
