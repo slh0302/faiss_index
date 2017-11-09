@@ -1,83 +1,87 @@
-//
-// Created by slh on 17-10-17.
-//
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/select.h>
 
+#define    FEATURE_FINISH_FLAG      "FEATURE_TRANSPORT_FINISH"
+#define    TRANSPORT_FINISH_FLAG    "SYSTEM_TRANSPORT_FINISH"
+#define    MAXLINE        1024
 
-#include <feature.h>
-#include "binary.h"
-#include "boost/algorithm/string.hpp"
-#include <faiss/gpu/StandardGpuResources.h>
-#include <faiss/gpu/GpuIndexIVFPQ.h>
-#include <faiss/gpu/GpuAutoTune.h>
-#include <faiss/index_io.h>
-#include "featureSql.h"
-#include <fstream>
-#include <vector>
+void usage(char *command)
+{
+    printf("usage :%s portnum filename\n", command);
+    exit(0);
+}
+int main(int argc, char **argv)
+{
+    struct sockaddr_in     serv_addr;
+    struct sockaddr_in     clie_addr;
+    char                   buf[MAXLINE];
+    int                    sock_id;
+    int                    recv_len;
+    socklen_t              clie_addr_len;
+    FILE                   *fp;
 
-using namespace std;
-using namespace feature_index;
-
-#define DATA_BINARY 371
-#define FAISS_GPU 10
-
-/// Search one file :
-///     1. extract feature
-///     2. search (binary search)
-///     3. Union
-
-int main(int argc,char** argv){
-    google::InitGoogleLogging(argv[0]);
-    FeatureIndex index = FeatureIndex();
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_googlenet_multilabel_all.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
-
-    if(argc <= 1 ){
-        std::cout<<"argc : "<<argc<<" is not enough"<<std::endl;
-        return 1;
+    if (argc != 3) {
+        usage(argv[0]);
+    }
+    if ((fp = fopen(argv[2], "w")) == NULL) {
+        perror("Creat file failed");
+        exit(0);
+    }
+    if ((sock_id = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("Create socket failed\n");
+        exit(0);
+    }
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(atoi(argv[1]));
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(sock_id, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("Bind socket faild\n");
+        exit(0);
     }
 
-    string file_list = argv[1];
-    int count =  atoi(argv[2]);
-    string index_filename = argv[3];
+    clie_addr_len = sizeof(clie_addr);
+    bzero(buf, MAXLINE);
+    int feature_len = 0;
 
-    Info_String* info = new Info_String[count];
-    string temp;
-    std::vector< std::string > file_name_list;
+    while (recv_len = recvfrom(sock_id, buf, MAXLINE, 0, (struct sockaddr *)&clie_addr, &clie_addr_len)) {
+        if (recv_len < 0) {
+            printf("Recieve data from client failed!\n");
+            break;
+        }
+        if (strstr(buf, TRANSPORT_FINISH_FLAG) != NULL) {
+            printf("\nFinish receive transport_finish_flag\n");
+            break;
+        }
+        if (strstr(buf, FEATURE_FINISH_FLAG) != NULL) {
+            //end of feature frame,we will get new feature next time
+            feature_len = 0;
+        }
+        else {
+            //write received feature to file
 
-    /// Change picture root_dir to exec
-    std::string ROOT_DIR = "/media/G/yanke/Vehicle_Data/wendeng_110/cropdata2/";
-    std::string file_list_name ="/home/slh/caffe-ssd/detecter/examples/_temp/file_list";
-    std::ofstream output(file_list_name,std::ios::out);
-    std::ifstream input(file_list, std::ios::in);
-    for(int k =0; k<count; k++){
-        getline(input, temp);
-        boost::split(file_name_list, temp, boost::is_any_of(" ,!"), boost::token_compress_on);
-        strcpy(info[k].info, (file_name_list[0] + " " + file_name_list[1]+ " "+ file_name_list[2]).c_str());
-        output<<ROOT_DIR << info[k].info<<std::endl;
+            ///TODO
+            int write_length = fwrite(buf, sizeof(char), recv_len, fp);
+            if (write_length < recv_len) {
+                printf("File write failed\n");
+                break;
+            }
+            else {
+                feature_len += write_length;
+            }
+        }
+        bzero(buf, MAXLINE);
     }
-    output.close();
-    input.close();
-
-
-    //Info_String* info_str = new Info_String[count];
-    FILE* infoWrite =fopen((index_filename+"_info").c_str(),"wb");
-    fwrite(info, sizeof(Info_String), count, infoWrite);
-    fclose(infoWrite);
-//
-//    caffe::Net<float>* net = index.InitNet(proto_file, proto_weight);
-//
-//    int* color_re = new int[count];
-//    int* type_re = new int[count];
-////
-////    /// int count, caffe::Net<float> * _net, std::string blob_name
-////    index.PictureAttrExtraction(count, net,  "color/classifier",
-////                                       "model_loss1/classifier", color_re, type_re);
-//
-//    std::ofstream o(index_filename, std::ios::out);
-//    for(int kk=0; kk<count; kk++){
-//        o<<kk<<","<<color_re[kk]<<","<<type_re[kk]<<std::endl;
-//    }
-//    o.close();
-
+    printf("Finish receive\n");
+    fclose(fp);
+    close(sock_id);
     return 0;
 }

@@ -1,11 +1,11 @@
-set(SOURCE_OLD_SERVER OldSyetem.cpp)
-add_executable(oldSystem ${SOURCE_OLD_SERVER})
+set(SOURCE_UDP_CLIENT client.cpp)
+add_executable(UDPClient ${SOURCE_UDP_CLIENT})
 
-set(EXTRACT_ATTR_SERVER extractColorType.cpp)
-add_executable(extractColorType ${EXTRACT_ATTR_SERVER})
+set(SOURCE_UDP_SERVER Server.cpp)
+add_executable(UDPServer ${SOURCE_UDP_SERVER})
 
 target_link_libraries(
-        oldSystem
+        UDPClient
         gpufaiss
         faiss
         libbinary.so
@@ -25,7 +25,10 @@ target_link_libraries(
 )
 
 target_link_libraries(
-        extractColorType
+        UDPServer
+        gpufaiss
+        faiss
+        libbinary.so
         libfeature.so
         libssd.so
         libboost_system.so
