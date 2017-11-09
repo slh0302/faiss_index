@@ -447,7 +447,7 @@ void ClientPersonThread(int client_sockfd, char* remote_addr,
                 cv::Mat im = cv::imread(root_dir + file_name_list[0]);
                 int y = atoi(file_name_list[1].c_str());
                 int x = atoi(file_name_list[2].c_str());
-                int width = atoi(file_name_list[3].c_str());
+                int width = atoi(fle_name_list[3].c_str());
                 int height = atoi(file_name_list[4].c_str());
                 int numSpace = atoi(file_name_list[5].c_str());
 

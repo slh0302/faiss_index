@@ -1,11 +1,6 @@
 //
 // Created by slh on 17-10-11.
 //
-
-//
-// Created by slh on 17-5-10.
-//
-
 #include <feature.h>
 #include "binary.h"
 #include "boost/algorithm/string.hpp"
@@ -13,6 +8,7 @@
 #include <faiss/gpu/GpuIndexIVFPQ.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/index_io.h>
+#include "featureSql.h"
 #include <fstream>
 #include <vector>
 
@@ -44,11 +40,11 @@ int main(int argc,char** argv){
 
     Info_String* info = new Info_String[count];
     string temp;
-    std::string ROOT_DIR = "/home/slh/retrieval/test_pic/";
+    std::string ROOT_DIR = "/media/G/yanke/Vehicle_Data/wendeng_110/cropdata2/";
     std::string file_list_name ="/home/slh/caffe-ssd/detecter/examples/_temp/file_list";
     std::ofstream output(file_list_name,std::ios::out);
     for(int k =0; k<count; k++){
-        strcpy(info[k].info, (file_list).c_str());
+        strcpy(info[k].info, (ROOT_DIR + file_list).c_str());
         output<<info[k].info<<std::endl;
     }
     output.close();
@@ -87,29 +83,58 @@ int main(int argc,char** argv){
     //
     **/
 
-    /// Init vehicle Faiss GPU Index
-    std::string FileName = "/home/slh/faiss_index/index_store/index_car.faissindex";
+    int cou = 1080000;
+    float* data1 = new float[cou*1024];
+    FILE* f = fopen (index_filename.c_str(),"rb");
+    if(f == NULL){
+        std::cout<<"File "<<index_filename<<" is not right"<<std::endl;
+        return 0;
+    }
+    fread(data1,sizeof(float), cou*1024, f);
+    fclose(f);
+
+    int ncentroids = int(4 * sqrt(cou));
     faiss::gpu::StandardGpuResources resources;
-    faiss::Index* cpu_index = faiss::read_index(FileName.c_str(), false);
-    faiss::gpu::GpuIndexIVFPQ* _index = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
-            faiss::gpu::index_cpu_to_gpu(&resources,FAISS_GPU,cpu_index));
-    std::cout<<"Faiss Init Done"<<std::endl;
+
+    faiss::gpu::GpuIndexIVFPQConfig config;
+    config.device = 9;
+    std::cout<< "ncentroids: "<<ncentroids <<std::endl;
+    faiss::gpu::GpuIndexIVFPQ indexPQ (
+            &resources, 1024,
+            ncentroids, 32, 8,
+            faiss::METRIC_L2,config);
+    indexPQ.verbose = true;
+    indexPQ.train(cou, data1);
+    std::cout<<"done"<<std::endl;
+
+    indexPQ.add (cou, data1);
 
     /// result return
     int nq = 1;
     int k = 100;
     std::vector<faiss::Index::idx_t> nns (k * nq);
     std::vector<float>               dis (k * nq);
-    _index->setNumProbes(15);
-    _index->search(nq, data, k, dis.data(), nns.data());
+    indexPQ.setNumProbes(15);
+    indexPQ.search(nq, data, k, dis.data(), nns.data());
     //index_person->search(nq, data, k, dis.data(), nns.data());
 
     /// SQL change
-    int* sql_result ;
-    for(int i=0; i<k; i++){
+    FeatureSQL::FeatureSql sql;
+    int row_count = 0 ;
+    int* sql_result = sql.searchWithColor("", 0, row_count);
+
+    int* total_res = new int[k];
+    int hasNum = 0;
+    for(int kk=0;kk<100;kk++){
+        for(int i=0; i<row_count; i++){
+            if( sql_result[i] == nns[kk] ){
+                total_res[hasNum] = kk;
+                hasNum++;
+            }
+        }
 
     }
-
+    std::cout<<hasNum<<std::endl;
     delete data;
     return 0;
 }

@@ -35,7 +35,9 @@ add_executable(sortcp ${TEST_SORT_CP})
 
 target_link_libraries(
         extract_feature
-        libfaiss.a
+        gpufaiss
+        faiss
+        libfeatureSql.so
         libfeature.so
         libssd.so
         libboost_system.so
@@ -44,6 +46,10 @@ target_link_libraries(
         libopencv_imgcodecs.so
         libopencv_imgproc.so
         libopenblas.so.0
+        libcudart.so
+        libcublas.so
+        libmysqlclient.so
+        libmysqlpp.so
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
         libglog.so
 )

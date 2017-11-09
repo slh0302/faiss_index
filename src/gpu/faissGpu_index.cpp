@@ -20,7 +20,7 @@ int main(int argc, char** argv){
         std::cout<<"argc : "<<argc<<" is not enough"<<std::endl;
         return 0;
     }
-    int count = 0;
+    int count = atoi(argv[2]);
     float* data = new float[count*1024];
  //   std::string filename = argv[1];
     // file read data
@@ -57,9 +57,9 @@ int main(int argc, char** argv){
     // query input
     feature_index::FeatureIndex input_index;
     input_index.InitGpu("GPU", 14);
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
-    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
+    std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
+    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
+    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
     std::cout<<"done extract"<<std::endl;
     for(int i =0 ;i< 10;i++){
         for(int j=0 ;j<1024;j++){
@@ -74,8 +74,7 @@ int main(int argc, char** argv){
 
     faiss::gpu::GpuIndexIVFPQConfig config;
     config.device = 9;
-
-
+    std::cout<< "ncentroids: "<<ncentroids <<std::endl;
     faiss::gpu::GpuIndexIVFPQ index (
             &resources, d,
             ncentroids, 32, 8,
@@ -87,17 +86,13 @@ int main(int argc, char** argv){
     index.add (count, data);
 
     { // I/O demo
-        const char *outfilename = "/home/slh/faiss_index/index_store/index_person_map_hasdata.faissindex";
+        const char *outfilename = "/home/slh/faiss_index/index_store/index_108w_car.faissindex";
         faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
         write_index (cpu_index, outfilename);
         printf ("done save \n");
         delete cpu_index;
     }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 1bccb6978a375a21e5e1bcf5aed1f0082f932d79
     //faiss::gpu::
     {
         int k = 10;

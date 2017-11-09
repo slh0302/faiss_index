@@ -6,6 +6,7 @@
 #define FAISS_INDEX_FEATURESQL_H
 
 #include <iostream>
+#include <vector>
 #include <mysql/mysql.h>
 #include <string>
 
@@ -35,10 +36,15 @@ class FeatureSql{
         }
 
         /// search with Car Type
-        int* searchWithType(std::string typeName, int id);
+        int* searchWithType(std::string typeName, int id, int& row_count);
 
         /// search with Car Color
-        int* searchWithColor(std::string colorName, int id);
+        int* searchWithColor(std::string colorName, int id, int& row_count);
+
+        /// search with user define type
+        int* searchWithUdType(std::string table, std::vector<std::string> typeName, std::vector<std::string> relation,
+                              std::vector<int> id, int& row_count);
+
 
         /// Init ID map
         void InitMapColor(std::string file, int count);
@@ -48,7 +54,10 @@ class FeatureSql{
 
     private:
         /// basic result handle
-        int* HandleResult(MYSQL_RES* res);
+        int* HandleResult(MYSQL_RES* res, int& row_count);
+        /// essemble sql statements
+        std::string AssembleSQL(std::string table, std::vector<std::string> typeName, std::vector<std::string> relation,
+                                std::vector<int> id);
         /// 定义一个数据库连接句柄
         MYSQL _mysql;
         /// ID map color

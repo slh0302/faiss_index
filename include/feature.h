@@ -84,6 +84,9 @@ namespace feature_index {
         /// Attr feature extract
         float* PictureAttrFeatureExtraction(int count, caffe::Net<float> * _net, std::string feature_blob_name,
                                             std::string Attr_color_name, std::string Attr_type_name, int* color_re, int* type_re);
+        /// Attr feature extract
+        void PictureAttrExtraction(int count, caffe::Net<float> * _net, std::string Attr_color_name,
+                                   std::string Attr_type_name, int* color_re, int* type_re);
         /// feature extract from picture init from net and memory
         float* MemoryPictureFeatureExtraction(int count, caffe::Net<float> * _net, std::string blob_name,
                                               std::vector<cv::Mat> pic_list, std::vector<int> label);

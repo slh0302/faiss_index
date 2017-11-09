@@ -34,17 +34,23 @@ link_directories(
         ${PROJECT_SOURCE_DIR}/../faiss
         ${PROJECT_SOURCE_DIR}/../faiss/gpu/
         /usr/lib
+        /usr/lib/mysql
+        /usr/lib/x86_64-linux-gnu/
         /share/local/lib
         /usr/local/lib
         ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib
 )
 
 add_subdirectory(util)
+add_subdirectory(binary)
 add_subdirectory(SQL)
+add_subdirectory(person)
 add_subdirectory(gpu)
 add_subdirectory(cpu)
 add_subdirectory(test)
-add_subdirectory(binary)
+add_subdirectory(system)
+#add_subdirectory(exprt)
+
 
 
 
