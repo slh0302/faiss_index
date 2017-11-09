@@ -130,16 +130,16 @@ int main(int argc,char** argv){
     int ki = 200;
     ofstream re ("testMap.txt",std::ios::out);
     /// result return
-
+    int nq = count;
+    index.InitLabelList("home/slh/faiss_index/model/labellist.txt");
     std::vector<faiss::Index::idx_t> nns (ki * nq);
     std::vector<float>               dis (ki * nq);
     std::vector<std::string> info_list;
     indexPQ.setNumProbes(15);
-    double totalmap = 0;
     indexPQ.search(nq, data, ki, dis.data(), nns.data());
     for(int i =0;i<nq;i++) {
         re<< info_name[i].info <<endl;
-        re<< indexPQ.Evaluate(ki,info[i].info, or_info, nns);
+        re<< index.Evaluate(ki, atoi(info[i].info), or_info, nns.data());
         for (int j = 0; j < ki; j++) {
             int _id_x = nns[i*ki+j];
             std::string temp1 = or_info[_id_x].info;
