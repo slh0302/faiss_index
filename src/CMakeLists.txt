@@ -49,7 +49,7 @@ add_subdirectory(gpu)
 add_subdirectory(cpu)
 add_subdirectory(test)
 add_subdirectory(system)
-#add_subdirectory(exprt)
+add_subdirectory(exprt)
 
 
 
