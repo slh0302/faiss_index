@@ -36,17 +36,29 @@ int main(int argc, char** argv){
     //            reserveVecs(0),
     //            storeTransposed(false),
     //            verbose(0)
-
+    faiss::gpu::GpuClonerOptions* options = new faiss::gpu::GpuClonerOptions();
+    options->indicesOptions=faiss::gpu::INDICES_64_BIT;
+    options->useFloat16CoarseQuantizer = false;
+    options->useFloat16 = false;
+    options->usePrecomputed = false;
+    options->reserveVecs = 0;
+    options->storeTransposed = false;
+    options->verbose = true;
     faiss::gpu::StandardGpuResources resources;
+    FILE *f = fopen (FileName, "r");
+    if(f==NULL){
+        std::cout<<"null done"<<std::endl;
+    }
     faiss::Index* cpu_index = faiss::read_index(FileName, false);
-    faiss::gpu::GpuIndexIVFPQ* index = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
-            faiss::gpu::index_cpu_to_gpu(&resources,2,cpu_index));
+    faiss::gpu::GpuIndexIVFPQ* index = (faiss::gpu::GpuIndexIVFPQ*)(
+            faiss::gpu::index_cpu_to_gpu(&resources,0 ,cpu_index, options));
 
     std::cout<<"read done"<<std::endl;
 
     std::ofstream out("/home/slh/caffe-ssd/detecter/examples/_temp/file_list",std::ios::out);
+    std::string ROOT_DIR = "/media/G/yanke/Vehicle_Data/wendeng_110/cropdata2/";
     for ( int i = 2;i<argc;i++){
-        out<<argv[i]<<" "<<i<<std::endl;
+        out<<ROOT_DIR + argv[i]<<" "<<i<<std::endl;
     }
     out.close();
     feature_index::FeatureIndex fea_index;

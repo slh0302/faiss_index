@@ -12,6 +12,9 @@
 #define FAISS_INDEX_RETRIEVAL_H
 #include <iostream>
 #include <string>
+#include <boost/thread.hpp>
+#include <boost/type.hpp>
+#include <boost/thread/lock_factories.hpp>
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexIVFPQ.h>
 
@@ -19,6 +22,7 @@
 namespace retrieval{
     #define TOTALBYTESIZE 1024
     #define ONEBYTESIZE 8
+
     /// short cut the type of unsigned char
     typedef unsigned char uchar;
 
@@ -94,6 +98,10 @@ namespace retrieval{
         int _nprobe;
         /// data count
         int _size;
+        /// mutex
+        boost::mutex _saveIndex;
+        /// plate mutex
+        boost::mutex _writeIndex;
     };
 }
 #endif //FAISS_INDEX_RETRIEVAL_H

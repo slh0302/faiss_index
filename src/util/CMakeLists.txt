@@ -5,6 +5,8 @@ add_library(ssd SHARED ${LIB_SSD_LIST})
 set(LIB_FEATURE_LIST feature.cpp)
 add_library(feature SHARED ${LIB_FEATURE_LIST})
 
+set(LIB_RETRIEVAL Retrieval.cpp)
+add_library(retrieval STATIC ${LIB_RETRIEVAL})
 
 set(SOURCE_FEATURE test.cpp)
 add_executable(extract_feature ${SOURCE_FEATURE})

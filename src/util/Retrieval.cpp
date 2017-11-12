@@ -6,7 +6,7 @@
 #include <fstream>
 #include <faiss/index_io.h>
 #include <faiss/AuxIndexStructures.h>
-
+using namespace std;
 retrieval::FeatureIndex::FeatureIndex(int dimension, int nlist,
                                       int groups, int nbits):
     _dimension(dimension), _nlist(nlist), _groups(groups), _nbits(nbits)
@@ -43,7 +43,7 @@ void retrieval::FeatureIndex::WriteIndexToFile(char* saveFileName){
 
 void retrieval::FeatureIndex::ReadIndexFromFile(char* fileName){
 
-    if( !fstream(saveFileName, std::ios::in ) ){
+    if( !fstream(fileName, std::ios::in ) ){
         std::cout<<"File Not Exist"<<std::endl;
         return ;
     }
@@ -51,7 +51,7 @@ void retrieval::FeatureIndex::ReadIndexFromFile(char* fileName){
     _index = dynamic_cast<faiss::IndexIVFPQ*>(faiss::read_index(fileName, false));
 
     /// init variable
-    _nprobe = _index->_nprobe;
+    _nprobe = 30;
     _groups = _index->pq.M;
     _nbits = _index->pq.nbits;
     _nlist = _index->codes.size();
@@ -59,11 +59,13 @@ void retrieval::FeatureIndex::ReadIndexFromFile(char* fileName){
 }
 
 void retrieval::FeatureIndex::AddItemToFeature(float* data){
+    {
+        boost::mutex::scoped_lock lock(this->_saveIndex);
 
-    this->_index->add(1, data);
+        this->_index->add(1, data);
 
-    _size = _index->ntotal;
-
+        _size = _index->ntotal;
+    }
 }
 
 void retrieval::FeatureIndex::DeleteItemFromFeature(int id) {
@@ -71,18 +73,20 @@ void retrieval::FeatureIndex::DeleteItemFromFeature(int id) {
     // ID selector construct
     faiss::IDSelector* ids = new faiss::IDSelectorRange(id, id+1);
 
-    this->_index->remove_ids(ids);
+    //this->_index->remove_ids(ids);
 
     _size = _index->ntotal;
 
 }
 
 void retrieval::FeatureIndex::AddItemList(int numOfdata, float *data) {
+    {
+        boost::mutex::scoped_lock lock(this->_saveIndex);
 
-    this->_index->add(numOfdata, data);
+        this->_index->add(numOfdata, data);
 
-    _size = _index->ntotal;
-
+        _size = _index->ntotal;
+    }
 }
 
 void retrieval::FeatureIndex::DeleteItemList(int beginId, int numOfdata) {
@@ -90,7 +94,7 @@ void retrieval::FeatureIndex::DeleteItemList(int beginId, int numOfdata) {
     // ID selector construct
     faiss::IDSelector* ids = new faiss::IDSelectorRange(beginId, beginId + numOfdata);
 
-    this->_index->remove_ids(ids);
+    //this->_index->remove_ids(ids);
 
     _size = _index->ntotal;
 

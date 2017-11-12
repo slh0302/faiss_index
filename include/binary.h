@@ -175,8 +175,7 @@ namespace FeatureBinary {
     *********************************************/
     bool LoadIndex(void *p, const char *filename, const char *, int count);
 
-    bool
-    Load_SpData(DataSet *da, Info_String *inst, const char *filename, const char *info_file, int count, int sp_begin);
+    bool Load_SpData(DataSet *da, Info_String *inst, const char *filename, const char *info_file, int count, int sp_begin);
 
     /*********************************************
         释放内存空间

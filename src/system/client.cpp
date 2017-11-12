@@ -61,22 +61,22 @@ int main(int argc, char **argv)
         bzero(buf, MAXLINE);
     }
     fclose(fp);
-    bzero(buf, MAXLINE);
+    memset(buf, 0, sizeof(MAXLINE));
     strcpy(buf, FEATURE_FINISH_FLAG);
     buf[strlen(buf)] = '\0';
-    for (i = 1000; i>0; i--) {
-        send_len = send(sock_id, buf, strlen(buf) + 1, 0);
+    for (i = 1; i>0; i--) {
+        send_len = send(sock_id, buf, strlen(buf), 0);
         if (send_len < 0) {
             printf("Finish send the feature end string\n");
             break;
         }
     }
 
-    bzero(buf, MAXLINE);
+    memset(buf, 0, sizeof(MAXLINE));
     strcpy(buf, TRANSPORT_FINISH_FLAG);
     buf[strlen(buf)] = '\0';
-    for (i = 1000; i>0; i--) {
-        send_len = send(sock_id, buf, strlen(buf) + 1, 0);
+    for (i = 1; i>0; i--) {
+        send_len = send(sock_id, buf, strlen(buf), 0);
         if (send_len < 0) {
             printf("Finish send the transport end string\n");
             break;

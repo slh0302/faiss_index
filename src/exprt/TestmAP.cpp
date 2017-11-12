@@ -19,7 +19,38 @@ using namespace feature_index;
 
 #define DATA_BINARY 371
 #define FAISS_GPU 10
-
+double Evaluate(int end, int label, Info_String *info, long *index, std::map<int, int>LabelList) {
+    int num = 0;
+    double res=0;
+    std::vector< std::string > file_name_list;
+    for (int i = 0; i < end; i++){
+        boost::split(file_name_list, info[index[i]].info, boost::is_any_of(" ,!"), boost::token_compress_on);
+        if (atoi(file_name_list[1].c_str()) == label){
+            num++;
+            res += num*1.0 / (i + 1);
+        }
+        file_name_list.clear();
+    }
+    res = res / LabelList[label];
+    return res;
+}
+double Evaluate2(int end, std::string name, int label, Info_String *info, long *index, std::map<int, int>LabelList) {
+    int num = 0;
+    double res=0;
+    std::vector< std::string > file_name_list;
+    for (int i = 0; i < end; i++){
+        boost::split(file_name_list, info[index[i]].info, boost::is_any_of(" ,!"), boost::token_compress_on);
+        if(name != file_name_list[0]){
+            if (atoi(file_name_list[1].c_str()) == label){
+                num++;
+                res += num*1.0 / (i + 1);
+            }
+        }
+        file_name_list.clear();
+    }
+    res = res / (LabelList[label]-1);
+    return res;
+}
 int main(int argc,char** argv){
     google::InitGoogleLogging(argv[0]);
     FeatureIndex index = FeatureIndex();
@@ -116,7 +147,7 @@ int main(int argc,char** argv){
     faiss::gpu::StandardGpuResources resources;
 
     faiss::gpu::GpuIndexIVFPQConfig config;
-    config.device = 9;
+    config.device = 0;
     std::cout<< "ncentroids: "<<ncentroids <<std::endl;
     faiss::gpu::GpuIndexIVFPQ indexPQ (
             &resources, 1024,
@@ -128,26 +159,33 @@ int main(int argc,char** argv){
 
     indexPQ.add (cou, data1);
     int ki = 200;
-    ofstream re ("testMap.txt",std::ios::out);
+
     /// result return
     int nq = count;
-    index.InitLabelList("home/slh/faiss_index/model/labellist.txt");
+    index.InitLabelList("/home/slh/faiss_index/model/labellist.txt");
     std::vector<faiss::Index::idx_t> nns (ki * nq);
     std::vector<float>               dis (ki * nq);
     std::vector<std::string> info_list;
-    indexPQ.setNumProbes(15);
+    indexPQ.setNumProbes(30);
     indexPQ.search(nq, data, ki, dis.data(), nns.data());
+    long* da = nns.data();
     for(int i =0;i<nq;i++) {
+        std::vector<std::string> OUT_LIST;
+        boost::split(OUT_LIST, info_name[i].info, boost::is_any_of("."), boost::token_compress_on);
+        ofstream re (OUT_LIST[0] + ".txt",std::ios::out);
         re<< info_name[i].info <<endl;
-        re<< index.Evaluate(ki, atoi(info[i].info), or_info, nns.data());
+        double resd = Evaluate(ki, atoi(info[i].info), or_info, da+i*ki, index.getLabelList());
+        // double resd1 = Evaluate2(ki, info_name[i].info, atoi(info[i].info), or_info, da+i*ki, index.getLabelList());
+        re<< resd << endl;
         for (int j = 0; j < ki; j++) {
             int _id_x = nns[i*ki+j];
             std::string temp1 = or_info[_id_x].info;
             boost::split(info_list, temp1, boost::is_any_of(" ,!"), boost::token_compress_on);
             re << info_list[0] << endl;
         }
+        re.close();
     }
-    re.close();
+
     delete data;
     return 0;
 }

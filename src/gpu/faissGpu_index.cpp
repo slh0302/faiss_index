@@ -74,6 +74,7 @@ int main(int argc, char** argv){
 
     faiss::gpu::GpuIndexIVFPQConfig config;
     config.device = 9;
+    config.usePrecomputedTables = false;
     std::cout<< "ncentroids: "<<ncentroids <<std::endl;
     faiss::gpu::GpuIndexIVFPQ index (
             &resources, d,

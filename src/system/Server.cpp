@@ -27,7 +27,8 @@ int main(int argc, char **argv)
     int                    recv_len;
     socklen_t              clie_addr_len;
     FILE                   *fp;
-
+    char* tmp = new char[1024*8*10];
+    int totalen = 0 ;
     if (argc != 3) {
         usage(argv[0]);
     }
@@ -58,25 +59,28 @@ int main(int argc, char **argv)
             break;
         }
         if (strstr(buf, TRANSPORT_FINISH_FLAG) != NULL) {
-            printf("\nFinish receive transport_finish_flag\n");
-            break;
+            memset(tmp,0,sizeof(char)* 1024*8*10);
+            printf("\nTRANSPORT_FINISH_FLAG\n");
+            // stop connect
+            continue;
         }
         if (strstr(buf, FEATURE_FINISH_FLAG) != NULL) {
+            float* p = new float[1024];
+            memcpy(p, tmp, sizeof(float) * 1024);
+            for(int i=0;i<1024;i++){
+                printf("%f ", p[i]);
+            }
+            printf("\n");
+            delete p;
             //end of feature frame,we will get new feature next time
             feature_len = 0;
+            printf("\nFinish receive transport_finish_flag\n");
         }
         else {
             //write received feature to file
-
-            ///TODO
-            int write_length = fwrite(buf, sizeof(char), recv_len, fp);
-            if (write_length < recv_len) {
-                printf("File write failed\n");
-                break;
-            }
-            else {
-                feature_len += write_length;
-            }
+            memcpy(tmp + feature_len, buf, recv_len);
+            // TODO
+            feature_len += recv_len;
         }
         bzero(buf, MAXLINE);
     }

@@ -59,6 +59,9 @@ namespace feature_index {
         caffe::Net<float> *feature_extraction_net;
         std::map<int, int> LabelList;// Evaluate
     public:
+        std::map<int, int> getLabelList(){
+            return this->LabelList;
+        }
         /// define init net work func
         caffe::Net<float> *InitNet(std::string proto_file, std::string proto_weight);
         /// define public mem and function
