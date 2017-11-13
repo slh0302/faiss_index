@@ -50,7 +50,7 @@ int main(int argc, char** argv){
         std::cout<<"null done"<<std::endl;
     }
     faiss::Index* cpu_index = faiss::read_index(FileName, false);
-    faiss::gpu::GpuIndexIVFPQ* index = (faiss::gpu::GpuIndexIVFPQ*)(
+    faiss::gpu::GpuIndexIVFPQ* index = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
             faiss::gpu::index_cpu_to_gpu(&resources,0 ,cpu_index, options));
 
     std::cout<<"read done"<<std::endl;
