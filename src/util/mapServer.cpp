@@ -555,7 +555,7 @@ void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::Fea
         std::vector<faiss::Index::idx_t> nns (k * nq);
         std::vector<float>               dis (k * nq);
 
-        FeatureBinary::SortTable* sorttable=new FeatureBinary::SortTable[DATA_BINARY];
+        FeatureBinary::SortTable* sorttable = new FeatureBinary::SortTable[DATA_BINARY];
         FeatureBinary::DataSet* get_t=tempFeature->getDataSet();
         FeatureBinary::Info_String* get_info=tempFeature->getInfoSet();
         std::string res;

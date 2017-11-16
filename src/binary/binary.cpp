@@ -120,7 +120,7 @@ void FeatureBinary::CreateTable(const char * filename,int bits){
 }
 
 
-bool FeatureBinary::AddToIndex(void*p, int* data,const char* in){
+bool FeatureBinary::AddToIndex(void*p, int* data, const char* in){
     FeatureBinary::feature* temp = new FeatureBinary::feature;
     int total = temp->getTotalSize();
     int curNum = temp->getCount();
@@ -129,7 +129,7 @@ bool FeatureBinary::AddToIndex(void*p, int* data,const char* in){
         FeatureBinary::Info_String* info_ne = new FeatureBinary::Info_String[curNum * 2];
         memcpy(ne, temp->getDataSet(), sizeof(FeatureBinary::DataSet)*curNum);
         memcpy(info_ne, temp->getInfoSet(), sizeof(FeatureBinary::Info_String)*curNum);
-        memcpy(ne[curNum].data,  data,sizeof(int[64]));
+        memcpy(ne[curNum].data,  data, sizeof(int[64]));
         strcpy(info_ne[curNum].info, in);
         temp->deleteData();
         temp->setDataSet(ne, curNum+1);

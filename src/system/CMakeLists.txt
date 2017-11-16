@@ -30,6 +30,9 @@ add_executable(UDPServer ${SOURCE_UDP_SERVER})
 set(SOURCE_MULTI_SERVER MutiUDPServer.cpp)
 add_executable(MutiUDPServer ${SOURCE_MULTI_SERVER})
 
+set(SOURCE_VIDEO_SYSTEM_BINARY MutiUDPServerBinary.cpp)
+add_executable(MutiUDPServerBinary ${SOURCE_VIDEO_SYSTEM_BINARY})
+
 set(SOURCE_VIDEO_SYSTEM VideoRetrievalSystem.cpp)
 add_executable(VideoRetrievalSystem ${SOURCE_VIDEO_SYSTEM})
 
@@ -57,6 +60,28 @@ target_link_libraries(
 
 target_link_libraries(
         MutiUDPServer
+        libretrieval.a
+        gpufaiss
+        libfaiss.a
+        libbinary.so
+        libfeature.so
+        libssd.so
+        libthreadbuf.so
+        libboost_system.so
+        libboost_filesystem.so
+        libboost_thread.so
+        libopencv_core.so
+        libopencv_imgcodecs.so
+        libopencv_imgproc.so
+        libopenblas.so.0
+        ${PROJECT_SOURCE_DIR}/../caffe-ssd/build/lib/libcaffe.so
+        libglog.so
+        libcudart.so
+        libcublas.so
+)
+
+target_link_libraries(
+        MutiUDPServerBinary
         libretrieval.a
         gpufaiss
         libfaiss.a

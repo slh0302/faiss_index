@@ -87,7 +87,7 @@ int main(int argc, char** argv){
     index.add (count, data);
 
     { // I/O demo
-        const char *outfilename = "/home/slh/faiss_index/index_store/index_108w_car.faissindex";
+        const char *outfilename = "/home/slh/faiss_index/index_store/index_108w_car_false.faissindex";
         faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
         write_index (cpu_index, outfilename);
         printf ("done save \n");

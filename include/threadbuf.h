@@ -24,14 +24,21 @@ namespace thread_buf{
         int id;
         float* p;
     };
-
+    struct TindexBinary{
+        TindexBinary(){}
+        TindexBinary(char* id, unsigned char* p ){ this->info = id; this->binary_feature = p;}
+        char* info;
+        unsigned char* binary_feature;  //[TOTALBYTESIZE / ONEBYTESIZE];
+    };
     class buffer {
     public:
-        buffer(int n) : un_read(0), capacity(n) { stk.resize(5*n); }
+        buffer(int n) : un_read(0), capacity(n) { bstk.resize(5*n); }
         void put(int x, float* p);
+        void put(char* x,  unsigned char* p);
         int get(retrieval::FeatureIndex* index);
-        int get(FeatureBinary::feature index);
+        int get(FeatureBinary::DataSet* _data, FeatureBinary::Info_String* _info, int total, int& cap);
         void multiPut(vector<Tindex> p);
+        void multiPut(vector<TindexBinary>& p);
     private:
         const int MAX_PROCESS = 10000;
         mutex buf_mu;
@@ -39,6 +46,7 @@ namespace thread_buf{
         condition_variable_any cond_put;
         condition_variable_any cond_get;
         vector<Tindex> stk;
+        vector<TindexBinary> bstk;
         int un_read, capacity;
         bool is_full() {
             return un_read == capacity;

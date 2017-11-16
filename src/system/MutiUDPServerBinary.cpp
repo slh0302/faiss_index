@@ -1,4 +1,8 @@
 //
+// Created by slh on 17-11-14.
+//
+
+//
 // Created by slh on 17-11-9.
 //
 #include "Retrieval.h"
@@ -31,17 +35,22 @@ using namespace retrieval;
 #define     MAXLINE                     1024
 #define     SERVER_PORT                 14000
 #define     INDEX_FILE                  "Video_index"
+#define     INDEX_FILE_Info             "Video_index_info"
 #define     BAK_FILE_NAME               ".index_video"
+#define     MAX_DATAT_INIT              200000
 boost::mutex IO_mutex;
+FeatureBinary::DataSet* _global_data = new FeatureBinary::DataSet[MAX_DATAT_INIT];
+FeatureBinary::Info_String* _global_info = new FeatureBinary::Info_String[MAX_DATAT_INIT];
+int _capacity = MAX_DATAT_INIT;
 void HandleMultiIndex(int sock_id, char* remote_addr, thread_buf::buffer* b);
-void producer(vector<thread_buf::Tindex> p, thread_buf::buffer* buf);
-void consumerBinary(thread_buf::buffer* buf, void* index);
-void consumer(thread_buf::buffer* buf, FeatureIndex* index);
-void updateFile( FeatureIndex* index );
+void producer(vector<thread_buf::TindexBinary>& p, thread_buf::buffer* buf);
+void consumerBinary(thread_buf::buffer* buf);
+void updateFile();
 long long   file_update_num = 0;
 long long   data_total_num = 0;
-long long   time_stop = 0;
+long long   history_data_total_num = 0;
 bool        isSystemRun = true;
+boost::mutex DATA_PROCESS_MUTEX;
 int main(int argc, char **argv)
 {
 
@@ -81,12 +90,11 @@ int main(int argc, char **argv)
 
     std::string table_filename="/home/slh/faiss_index/index_store/table.index";
     FeatureBinary::CreateTable(table_filename.c_str(), 16);
-    void * indexBinary = FeatureBinary::CreateIndex(0);
-    boost::thread th2(boost::bind(&consumerBinary, IndexQue, indexBinary));
+    boost::thread th2(boost::bind(&consumerBinary, IndexQue));
 
     // TODO: BINARY INDEX ADD: index
     //boost::thread th3(boost::bind(&consumerBinary, IndexQue, indexBinary));
-    boost::thread th1(boost::bind(&updateFile, index));
+    boost::thread th1(boost::bind(&updateFile));
     while ((recv_len = recvfrom(sock_id, buf, MAXLINE, 0, (struct sockaddr *)&clie_addr, &clie_addr_len))>0 && isSystemRun) {
 
         if (strstr(buf, BEGIN_TRANSPORT) != NULL) {
@@ -107,9 +115,10 @@ void HandleMultiIndex(int sock_id, char* remote_addr, thread_buf::buffer* _b){
     socklen_t  clie_addr_len;
     struct sockaddr_in  clie_addr;
     int recv_len = 0;
-    vector<thread_buf::Tindex> info;
+    vector<thread_buf::TindexBinary> info;
     int feature_len = 0;
     char* tmp = new char[1024*10];
+    char* _t_info = new char[100];
     while ((recv_len = recvfrom(sock_id, buf, MAXLINE, 0, (struct sockaddr *)&clie_addr, &clie_addr_len)>0) && isSystemRun) {
         if (recv_len < 0) {
             {
@@ -130,17 +139,17 @@ void HandleMultiIndex(int sock_id, char* remote_addr, thread_buf::buffer* _b){
             break;
         }
         if (strstr(buf, FEATURE_FINISH_FLAG) != NULL) {
-            float * p = new float[1024];
+            unsigned char * p = new unsigned char[1024];
             memcpy(p, tmp, sizeof(float) * 1024);
             for(int i=0;i<1024;i++){
                 printf("%f ", p[i]);
             }
             printf("\n");
             // TODO idx handle
-            info.push_back(thread_buf::Tindex(1, p));
+            info.push_back(thread_buf::TindexBinary(_t_info, p));
             /// auto index
             if(info.size() > 1000){
-                vector<thread_buf::Tindex> _info ;
+                vector<thread_buf::TindexBinary> _info ;
                 _info.swap(info);
                 boost::thread th(boost::bind(&producer, _info, _b));
             }
@@ -166,7 +175,7 @@ void HandleMultiIndex(int sock_id, char* remote_addr, thread_buf::buffer* _b){
 }
 
 
-void producer(vector<thread_buf::Tindex> p, thread_buf::buffer* buf)
+void producer(vector<thread_buf::TindexBinary>& p, thread_buf::buffer* buf)
 {
     {
         boost::mutex::scoped_lock lock(IO_mutex);
@@ -177,27 +186,7 @@ void producer(vector<thread_buf::Tindex> p, thread_buf::buffer* buf)
     p.clear();
 }
 
-void consumer(thread_buf::buffer* buf, FeatureIndex* index)
-{
-    while(1){
-        boost::this_thread::sleep(boost::posix_time::seconds(120));
-        {
-            boost::mutex::scoped_lock lock(IO_mutex);
-            cout << " Get done " << endl;
-        }
-        // TODO: ADD BINARY CHANGE
-//        if( data_total_num < 100000){
-//            boost::this_thread::sleep(boost::posix_time::seconds(1000));
-//            continue;
-//        }
-        if( !isSystemRun )
-            break;
-        int _n = buf->get(index);
-        data_total_num += _n;
-    }
-}
-
-void consumerBinary(thread_buf::buffer* buf, void* index)
+void consumerBinary(thread_buf::buffer* buf)
 {
     while(1){
         boost::this_thread::sleep(boost::posix_time::seconds(120));
@@ -210,14 +199,18 @@ void consumerBinary(thread_buf::buffer* buf, void* index)
         }
         if( !isSystemRun )
             break;
-        int _n = buf->get(index);
-        data_total_num += _n;
+        {
+            boost::mutex::scoped_lock lock(DATA_PROCESS_MUTEX);
+            int _n = buf->get(_global_data, _global_info, data_total_num, _capacity);
+            data_total_num += _n;
+        }
     }
 }
 
-void updateFile( FeatureIndex* index )
+void updateFile()
 {
     long long tmp = data_total_num;
+    int time_stop = 0;
     while(1) {
         tmp = data_total_num;
         ifstream it(BAK_FILE_NAME, std::ios::in);
@@ -229,7 +222,7 @@ void updateFile( FeatureIndex* index )
             if (time_stop > 100) {
                 {
                     boost::mutex::scoped_lock lock(IO_mutex);
-                    cout << " Can't detect running program. exit(0)" << endl;
+                    cout << " Can't detect running retrieval program. exit(0)" << endl;
                 }
                 isSystemRun = false;
                 break;
@@ -238,12 +231,21 @@ void updateFile( FeatureIndex* index )
         if(isSystemRun == false){
             break;
         }
-        if (index->getTotalIndex() > 0 && tmp != data_total_num) {
-            // TODO BINARY CHANGE
+        if (tmp != data_total_num) {
             time_stop = 0;
-            index->WriteIndexToFile(INDEX_FILE);
+            {// I/O Mutex
+                boost::mutex::scoped_lock lock(DATA_PROCESS_MUTEX);
+                FILE *_f = fopen(INDEX_FILE, "ab");
+                fwrite(_global_data, sizeof(FeatureBinary::DataSet), data_total_num, _f);
+                fclose(_f);
+                _f = fopen(INDEX_FILE_Info, "ab");
+                fwrite(_global_info, sizeof(FeatureBinary::Info_String), data_total_num, _f);
+                fclose(_f);
+                history_data_total_num += data_total_num;
+                data_total_num = 0;
+            }
             ofstream ou(BAK_FILE_NAME, std::ios::out);
-            ou << "Binary " << data_total_num;
+            ou << "Binary " << history_data_total_num;
             ou.close();
         }
         it.close();
