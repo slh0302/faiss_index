@@ -2,17 +2,12 @@
 // Created by slh on 2017/8/26.
 //
 
-//
-// Created by slh on 17-8-24.
-//
 #include <iostream>
 #include "boost/timer.hpp"
 #include "boost/thread.hpp"
-#include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <string>
 #include "boost/algorithm/string.hpp"
 #include <feature.h>
 #include <faiss/gpu/StandardGpuResources.h>
@@ -55,10 +50,6 @@ void LoadPersonSpace();
 void ClientVehicleThread(int client_sockfd, char* remote_addr,
                   feature_index::FeatureIndex feature_index,
                   faiss::gpu::GpuIndexIVFPQ* index, caffe::Net<float>* net);
-
-// client thread
-void ClientBinaryThread(int client_sockfd, char* remote_addr, feature_index::FeatureIndex feature_index,
-                  void* p, caffe::Net<float>* bnet);
 
 // client person
 // client thread

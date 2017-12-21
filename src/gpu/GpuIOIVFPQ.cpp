@@ -43,7 +43,7 @@ int main(int argc, char** argv){
     options->usePrecomputed = false;
     options->reserveVecs = 0;
     options->storeTransposed = false;
-    options->verbose = true;
+//    options->verbose = true;
     faiss::gpu::StandardGpuResources resources;
     FILE *f = fopen (FileName, "r");
     if(f==NULL){
@@ -51,7 +51,7 @@ int main(int argc, char** argv){
     }
     faiss::Index* cpu_index = faiss::read_index(FileName, false);
     faiss::gpu::GpuIndexIVFPQ* index = dynamic_cast<faiss::gpu::GpuIndexIVFPQ*>(
-            faiss::gpu::index_cpu_to_gpu(&resources,0 ,cpu_index, options));
+            faiss::gpu::index_cpu_to_gpu(&resources,12 ,cpu_index, options));
 
     std::cout<<"read done"<<std::endl;
 

@@ -234,3 +234,39 @@ int FeatureBinary::retrival(int* input, FeatureBinary::DataSet* get_t, FeatureBi
     cout<<"done sort"<<endl;
     return num_find;
 }
+
+int FeatureBinary::retrival(int* input, FeatureBinary::DataSet* get_t,
+                            int total,int bits,int LIMIT, FeatureBinary::SortTable* sorttable){
+    int calc = 0;
+    int i = 0, indexLine = 0;
+    int sum = 0;
+    unsigned short Record[TOTALBYTESIZE / BYTE_INDEX];
+    std::cout<<"start"<<std::endl;
+    while (calc < total){
+        sum = 0;
+        memset(Record, 0, sizeof(Record));
+        for (i = 0; i < TOTALBYTESIZE / bits; i++){
+            Record[i] = input[i] ^get_t[calc].data[i];
+            sum += FeatureBinary::IndexTable[Record[i]];
+            if (sum > LIMIT){
+                break;
+            }
+        }
+        if (sum < LIMIT){
+            sorttable[indexLine].sum = sum;
+            sorttable[indexLine++].info = calc;
+            calc ++;
+        }
+        else{
+            calc++;
+        }
+
+    }
+    std::cout<<"done "<<indexLine<<std::endl;
+    int num_find=300<indexLine?300:indexLine;
+    std::cout<<"num_find "<<num_find<<std::endl;
+    FeatureBinary::findKMax(sorttable, 0, indexLine - 1,num_find);
+    std::sort(sorttable, sorttable + num_find-1);
+    cout<<"done sort"<<endl;
+    return num_find;
+}

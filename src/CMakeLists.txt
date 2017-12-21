@@ -9,7 +9,7 @@ SET(OpenCV_DIR /usr/local/share/OpenCV/OpenCVConfig.cmake)
 
 find_package(OpenCV REQUIRED)
 if(OpenCV_FOUND) # if not OpenCV 3.x, then imgcodecs are not found
-    message("opencv found ${OpenCV_INCLUDE_DIRS} ")
+    message("opencv found ${OpenCV_LIBS} ")
 endif()
 
 

@@ -207,7 +207,8 @@ namespace FeatureBinary {
     void retrival_thread(int *input, DataSet *get_t, int begin, int total, int bits, int LIMIT, SortTable *sorttable,
                          int *line_record);
 
-
+    int retrival(int* input, FeatureBinary::DataSet* get_t,
+             int total,int bits,int LIMIT, FeatureBinary::SortTable* sorttable);
 }
 
 

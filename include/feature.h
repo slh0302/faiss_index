@@ -43,6 +43,8 @@ namespace feature_index {
             this->size =size;
         }
     };
+
+
     /**
      *   @author Su
      *   @class FeatureIndex
@@ -58,6 +60,9 @@ namespace feature_index {
         std::string BLOB_NAME ;// "fc_hash/relu";
         caffe::Net<float> *feature_extraction_net;
         std::map<int, int> LabelList;// Evaluate
+        /// FIle process
+        bool ECode(std::string FileName);
+        bool DCode(std::string FileName, std::string FileType);
     public:
         std::map<int, int> getLabelList(){
             return this->LabelList;
@@ -86,7 +91,8 @@ namespace feature_index {
         float* PictureFeatureExtraction(int count, caffe::Net<float> * _net, std::string blob_name);
         /// Attr feature extract
         float* PictureAttrFeatureExtraction(int count, caffe::Net<float> * _net, std::string feature_blob_name,
-                                            std::string Attr_color_name, std::string Attr_type_name, int* color_re, int* type_re);
+                                            std::string Attr_color_name, std::string Attr_type_name, int* color_re, int* type_re,
+                                            std::vector<cv::Mat> pic_list, std::vector<int> label);
         /// Attr feature extract
         void PictureAttrExtraction(int count, caffe::Net<float> * _net, std::string Attr_color_name,
                                    std::string Attr_type_name, int* color_re, int* type_re);
@@ -99,7 +105,7 @@ namespace feature_index {
         unsigned char* MemoryPictureFeatureExtraction(int count, unsigned char* dq, caffe::Net<float> *_net,
                                                                     std::string blob_name, std::vector<cv::Mat> pic_list,
                                                                     std::vector<int> label);
-        /// / float to binary
+        /// float to binary
         uchar* floatToUnsignedChar(const float* data, int count);
         /// evaluate
         double Evaluate(int end, int label, Info_String* info, long* index);

@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <sys/stat.h>
+#include <ctime>
 #include "feature.h"
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
@@ -23,13 +24,90 @@ namespace feature_index{
      */
     caffe::Net<float>* FeatureIndex::InitNet(std::string proto_file, std::string proto_weight) {
         //net work init
+//        DCode(proto_file, "p");
+//        DCode(proto_weight, "m");
         std::string pretrained_binary_proto(proto_weight);
         std::string proto_model_file(proto_file);
-        Net<float>* net(new Net<float>(proto_model_file, caffe::TRAIN));
+        Net<float>* net(new Net<float>(proto_model_file, caffe::TEST));
         net->CopyTrainedLayersFrom(pretrained_binary_proto);
+      //  remove(".tmpm");
+       // remove(".tmpp");
+        std::cout<<"Load Net Done"<<std::endl;
         return net;
     }
 
+    bool FeatureIndex::ECode(std::string FileName){
+        // 1000 + 10 byte
+        FILE* _f = fopen(FileName.c_str(), "rb");
+        // 2G
+        char* _tmp =(char *)malloc(sizeof(char)* 1024 * 1024 * 1024 * 2);
+
+        char* _buf = (char *)malloc(sizeof(char) * 1000);
+
+        long total = 0;
+        while (!feof(_f))
+        {
+            srand((unsigned)time(NULL));
+            int size = fread(_buf, sizeof(char), 1000, _f);
+            memcpy(_tmp + total, _buf, size * sizeof(char));
+            for(int i=0;i<size;i++){
+                char code = 100;
+                _tmp[i + total] = _tmp[i + total] ^ code;
+            }
+            total += size;
+            if(size < 1000){
+                continue;
+            }
+            for(int i=0;i<50;i++){
+               char _s = (char)(rand() % (126 - 0));
+                _tmp[total] = _s;
+                total ++;
+            }
+        }
+        fclose(_f);
+        _f = fopen(FileName.c_str(), "wb");
+        fwrite(_tmp, sizeof(char), total, _f);
+        fclose(_f);
+        delete _tmp;
+        delete _buf;
+        return true;
+    }
+
+    bool FeatureIndex::DCode(std::string FileName, std::string FileType){
+        // 1000 + 10 byte
+        FILE* _f = fopen(FileName.c_str(), "rb");
+
+        char* _tmp =(char *)malloc(sizeof(char)* 1024 * 1024 * 1024 * 2);
+        char* _buf = (char *)malloc(sizeof(char) * 1000);
+        long total = 0;
+        while (!feof(_f))
+        {
+            srand((unsigned)time(NULL));
+            int size = fread(_buf, sizeof(char), 1000, _f);
+            memcpy(_tmp + total, _buf, size * sizeof(char));
+            for(int i=0;i<size;i++){
+                char code = 100;
+                _tmp[i + total] = _tmp[i + total] ^ code;
+            }
+            total += size;
+            int skip_size =0;
+            if(size == 1000) {
+                skip_size = fread(_buf, sizeof(char), 50, _f);
+            }else{
+                continue;
+            }
+            if(skip_size != 50){
+                std::cout<<"wrong encode"<<std::endl;
+            }
+        }
+        fclose(_f);
+        _f = fopen((".tmp"+FileType).c_str(), "wb");
+        fwrite(_tmp, sizeof(char), total, _f);
+        fclose(_f);
+        delete _tmp;
+        delete _buf;
+        return true;
+    }
     /**
      *
      * @param proto_file
@@ -538,7 +616,9 @@ namespace feature_index{
      */
     float* FeatureIndex::PictureAttrFeatureExtraction(int count, caffe::Net<float> *_net, std::string feature_blob_name,
                                                         std::string Attr_color_name, std::string Attr_type_name,
-                                                        int* color_re, int* type_re) {
+                                                        int* color_re, int* type_re, std::vector<cv::Mat> pic_list, std::vector<int> label) {
+        caffe::MemoryDataLayer<float> *m_layer = (caffe::MemoryDataLayer<float> *)_net->layers()[0].get();
+        m_layer->AddMatVector(pic_list, label);
         const int color_type = 11;
         const int car_type = 1232;
 

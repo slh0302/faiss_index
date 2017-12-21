@@ -45,7 +45,7 @@ int main(int argc, char** argv){
     faiss::gpu::StandardGpuResources resources;
     faiss::Index* cpu_index = faiss::read_index(FileName, false);
     faiss::gpu::GpuIndexIVFFlat* index = dynamic_cast<faiss::gpu::GpuIndexIVFFlat*>(
-            faiss::gpu::index_cpu_to_gpu(&resources,2,cpu_index));
+            faiss::gpu::index_cpu_to_gpu(&resources,12,cpu_index));
 
     std::cout<<"read done"<<std::endl;
 

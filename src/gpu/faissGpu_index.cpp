@@ -31,21 +31,6 @@ int main(int argc, char** argv){
     }
     fread(data,sizeof(float), count*1024, f);
     fclose(f);
-//    char s ='0';
-//    for(int j=0; j<3;j++){
-//        char temp = s+j;
-//        std::string file_last = filename + "_" + temp;
-//        std::cout<<file_last<<std::endl;
-//        FILE* f = fopen (file_last.c_str(),"rb");
-//        if(f == NULL){
-//            std::cout<<"File "<<argv[1]<<" is not right"<<std::endl;
-//            return 0;
-//        }
-//        fread(&data[j*2000000], sizeof(float), 2000000*1024, f);
-//        fclose(f);
-//        std::cout<<"file done "<<file_last<<std::endl;
-//    }
-
     std::cout<<"File read done"<<std::endl;
     for(int i =0 ;i< 10;i++){
         for(int j=0 ;j<1024;j++){
@@ -56,10 +41,10 @@ int main(int argc, char** argv){
 
     // query input
     feature_index::FeatureIndex input_index;
-    input_index.InitGpu("GPU", 14);
-    std::string proto_file = "/home/slh/faiss_index/model/deploy_google_multilabel.prototxt";
-    std::string proto_weight = "/home/slh/faiss_index/model/wd_google_id_model_color_iter_100000.caffemodel";
-    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "pool5/7x7_s1");
+    input_index.InitGpu("GPU", 13);
+        std::string proto_file = "/home/slh/faiss_index/model/deploy_person.prototxt";
+    std::string proto_weight = "/home/slh/faiss_index/model/model.caffemodel";
+    float * xq = input_index.PictureFeatureExtraction(10,proto_file.c_str(), proto_weight.c_str(), "loss3/feat_normalize");
     std::cout<<"done extract"<<std::endl;
     for(int i =0 ;i< 10;i++){
         for(int j=0 ;j<1024;j++){
@@ -73,7 +58,7 @@ int main(int argc, char** argv){
     faiss::gpu::StandardGpuResources resources;
 
     faiss::gpu::GpuIndexIVFPQConfig config;
-    config.device = 9;
+    config.device = 14;
     config.usePrecomputedTables = false;
     std::cout<< "ncentroids: "<<ncentroids <<std::endl;
     faiss::gpu::GpuIndexIVFPQ index (
@@ -87,7 +72,7 @@ int main(int argc, char** argv){
     index.add (count, data);
 
     { // I/O demo
-        const char *outfilename = "/home/slh/faiss_index/index_store/index_108w_car_false.faissindex";
+        const char *outfilename = "/home/slh/faiss_index/index_store/person_index_real.faissindex";
         faiss::Index * cpu_index = faiss::gpu::index_gpu_to_cpu (&index);
         write_index (cpu_index, outfilename);
         printf ("done save \n");
